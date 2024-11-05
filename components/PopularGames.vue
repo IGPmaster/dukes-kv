@@ -9,7 +9,7 @@
 						</p>
 						<div v-for="promo in promotionsPosts" :key="promo.id">
 							<p class="info_content text-[#bacfdc] font-light text-lg py-5 px-4">
-								{{ promo.acf.popular_games_info }}
+								{{ promotionsPosts[0].acf.popular_games_info }}
 							</p>
 						</div>
 					</div>

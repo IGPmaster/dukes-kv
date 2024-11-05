@@ -9,11 +9,21 @@
       <div class="w-full">
         <a :href="regLink" style="margin-bottom: -5px;" v-if="promo.acf && promo.yoast_head_json">
           <picture>
-            <source media="(min-width: 992px)" :srcset="promo.acf.image_full" :alt="promo.yoast_head_json.description"
-              :title="promo.yoast_head_json.og_title">
-            <img :src="promo.acf.image_small" class="w-full" :alt="promo.yoast_head_json.description"
-              :title="promo.yoast_head_json.og_title" style="min-width: 100vw; padding-top:6rem;" width="1920"
-              height="400">
+            <source 
+              media="(min-width: 992px)" 
+              :srcset="promo.acf.image_full" 
+              :alt="promo.yoast_head_json.description"
+              :title="promo.yoast_head_json.title"
+            >
+            <img 
+              :src="promo.acf.image_small" 
+              class="w-full" 
+              :alt="promo.yoast_head_json.description"
+              :title="promo.yoast_head_json.title" 
+              style="min-width: 100vw; padding-top:6rem;" 
+              width="1920"
+              height="400"
+            >
           </picture>
         </a>
       </div>
@@ -23,14 +33,16 @@
       </div>
 
       <main class="container mx-auto text-center py-4">
-        <h1 class="site_heading text-primary text-lg md:text-2xl lg:text-4xl font-bold">Dukes Casino - Your Casino!</h1>
+        <h1 class="site_heading text-primary text-lg md:text-2xl lg:text-4xl font-bold">{{promo.yoast_head_json.title}}</h1>
       </main>
-
 
       <div class="container mx-auto">
         <div class="flex justify-center lg:pb-5 py-3">
-          <img class="lg:w-2/5 w-7/8 place-items-center " :src="promo.acf.trust_icons"
-            alt="100% Licensed and fast payouts" />
+          <img 
+            class="lg:w-2/5 w-7/8 place-items-center" 
+            :src="promo.acf.trust_icons"
+            :alt="promo.yoast_head_json.description" 
+          />
         </div>
       </div>
     </div>

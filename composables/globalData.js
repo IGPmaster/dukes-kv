@@ -32,6 +32,7 @@ const PP_LOBBY_LINK = 'https://betdukes.casino-pp.net/';
 const WP_API = 'https://headless.betdukes.com/wp-json/wp/v2/';
 
 //CloudFlare Workers KV data:
+const KV_WORKER_URL = 'https://worker-casino-brands.tech1960.workers.dev/';
 export const KV_GAMES = 'https://access-ppgames.tech1960.workers.dev/';
 export const FILTERED_BY_NAME_KV = 'https://access-filterbyname.tech1960.workers.dev/';
 const CF_GEO_WORKER = 'https://cf-geo-lookup.tech1960.workers.dev/';
@@ -193,37 +194,66 @@ async function fetchApiPromotions() {
   }
 }
 
+// In globalData.js
 export async function fetchPromotions() {
   try {
-    //console.log('Fetching Promotions...');
-    const response = await fetch(`${WP_API}promotions/?_fields=content,yoast_head_json.description,yoast_head_json.og_title,acf&acf_format=standard`);
-    //const response = await fetch(`${WP_API}promotions`);
-    console.log('Response received:', response);
+    console.log('Fetching KV content for:', { WHITELABEL_ID, lang: lang.value });
     
-    const data = await response.json();
-    console.log('JSON data:', data);
-    
-    const filteredData = data.filter((item) => {
-      const geoTarget = item.acf.geo_target_country_sel;
-      return geoTarget && geoTarget.includes(lang.value);
-    });
-    console.log('Filtered data:', filteredData);
-    
-    // If no posts are found for the selected country, include the CA post
-    if (filteredData.length === 0) {
-      const caPosts = data.filter((item) => {
-        const geoTarget = item.acf.geo_target_country_sel;
-        return geoTarget && geoTarget.includes('IE');
-      });
-      //console.log('CA Posts:', caPosts);
-      filteredData.push(...caPosts);
+    // Try current language first
+    let response = await fetch(`${KV_WORKER_URL}content/${WHITELABEL_ID}/${lang.value}`);
+    let data = null;
+
+    if (response.ok) {
+      data = await response.json();
+    } else {
+      // Try fallback languages in order
+      const fallbackLangs = ['EN', 'CA', 'IE'];
+      
+      for (const fallbackLang of fallbackLangs) {
+        if (fallbackLang === lang.value) continue;
+        
+        console.log(`Trying fallback: ${fallbackLang}`);
+        response = await fetch(`${KV_WORKER_URL}content/${WHITELABEL_ID}/${fallbackLang}`);
+        
+        if (response.ok) {
+          data = await response.json();
+          break;
+        }
+      }
     }
-    
-    promotionsPosts.value = filteredData;
-    console.log('promotionsPosts.value:', promotionsPosts.value);
-    
+
+    if (data && (data.acf || data.brand_info)) {
+      // Ensure consistent structure for components
+      promotionsPosts.value = [{
+        id: `${WHITELABEL_ID}-${lang.value}`,
+        acf: {
+          ...data.acf,
+          // Ensure all required fields exist with fallbacks
+          new_games_info: data.acf.new_games_info || '',
+          popular_games_info: data.acf.popular_games_info || '',
+          slot_games_info: data.acf.slot_games_info || '',
+          casino_games_info: data.acf.casino_games_info || '',
+          jackpot_games_info: data.acf.jackpot_games_info || '',
+          live_games_info: data.acf.live_games_info || '',
+          scratch_games_info: data.acf.scratch_games_info || '',
+          sig_terms: data.acf.sig_terms || '',
+          image_full: data.acf.image_full || '',
+          image_small: data.acf.image_small || '',
+          trust_icons: data.acf.trust_icons || ''
+        },
+        brand_info: data.brand_info || {},
+        yoast_head_json: data.yoast_head_json || {}
+      }];
+    } else {
+      console.error('Invalid data structure received:', data);
+      promotionsPosts.value = [];
+    }
+
+    console.log('Final promotionsPosts:', promotionsPosts.value);
+
   } catch (error) {
-    console.error('Error fetching Promotions:', error);
+    console.error('Error fetching promotions:', error);
+    promotionsPosts.value = [];
   }
 }
 
