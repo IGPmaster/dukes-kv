@@ -54,6 +54,8 @@
 </template>
 
 <script setup>
+import { WHITELABEL_ID } from '~/composables/globalData'
+const brandId = computed(() => WHITELABEL_ID)
 const { getCacheKey, getCache, setCache } = useCache();
 const loading = ref(true);
 

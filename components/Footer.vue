@@ -127,6 +127,8 @@
 </template>
 
 <script setup>
+import { WHITELABEL_ID } from '~/composables/globalData'
+const brandId = computed(() => WHITELABEL_ID)
 
 import { ref, onMounted } from 'vue';
 

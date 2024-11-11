@@ -1,6 +1,6 @@
 export default defineNuxtConfig({
   ssr: true,
-  
+  devtools: { enabled: false },
   // Combine all modules
   modules: [
     '@nuxtjs/tailwindcss',
@@ -24,6 +24,7 @@ export default defineNuxtConfig({
   // Remove buildModules as it's not used in Nuxt 3
   
   nitro: {
+    compatibilityDate: '2024-11-11',
     preset: 'cloudflare-pages',
     output: {
       dir: '.output',
@@ -64,6 +65,11 @@ export default defineNuxtConfig({
           href: 'https://fonts.googleapis.com/icon?family=Material+Icons'
         }
       ],
+    }
+  },
+  hooks: {
+    'app:created': async () => {
+      await loadTranslations()
     }
   },
 });

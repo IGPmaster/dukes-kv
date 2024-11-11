@@ -1,5 +1,15 @@
+<!-- layouts/default.vue -->
 <template>
-  <div class="min-h-screen bg-primary_bg">
-    <slot />
+  <div>
+    <Header />
+    <main>
+      <slot /> <!-- This is where page content goes -->
+    </main>
+    <Footer />
+    <CookieConsent />
   </div>
 </template>
+
+<script setup>
+import Header from '~/components/Header.vue'
+</script>

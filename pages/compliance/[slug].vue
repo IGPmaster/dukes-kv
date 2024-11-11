@@ -20,6 +20,8 @@
 import { useRoute } from 'vue-router';
 import { ref } from 'vue';
 import { msgTranslate, globalContent, loadTranslations } from '~/composables/globalData';
+import { WHITELABEL_ID } from '~/composables/globalData'
+const brandId = computed(() => WHITELABEL_ID)
 
 const route = useRoute();
 const slug = route.params.slug;

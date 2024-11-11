@@ -67,6 +67,8 @@ import {
   loadTranslations, 
   loadLang 
 } from '~/composables/globalData';
+import { WHITELABEL_ID } from '~/composables/globalData'
+const brandId = computed(() => WHITELABEL_ID)
 
 // Loading state
 const loading = ref(true);

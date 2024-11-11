@@ -1,12 +1,5 @@
 <template>
-  <div>
-    <Header />
+  <NuxtLayout>
     <NuxtPage />
-    <Footer />
-    <CookieConsent />
-  </div>
+  </NuxtLayout>
 </template>
-
-<script setup>
-import Header from '~/components/Header.vue'  // Make sure path is correct
-</script>

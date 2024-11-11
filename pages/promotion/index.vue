@@ -126,6 +126,8 @@
 import { ref, onMounted } from 'vue';
 import { useHead } from '#imports';
 import { fetchPromotions, promotionsData } from '~/composables/globalData';
+import { WHITELABEL_ID } from '~/composables/globalData'
+const brandId = computed(() => WHITELABEL_ID)
 
 const promotions = ref([]);
 const loading = ref(true);

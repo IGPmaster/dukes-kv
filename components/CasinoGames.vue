@@ -83,6 +83,8 @@
 
 <script setup>
 import { ref, onMounted, defineEmits } from 'vue';
+import { WHITELABEL_ID } from '~/composables/globalData'
+const brandId = computed(() => WHITELABEL_ID)
 const loading = ref(true);
 import { 
     newGames, 

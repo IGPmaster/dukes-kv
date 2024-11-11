@@ -2,6 +2,8 @@
 import { useTranslations } from '~/composables/useTranslations'
 import { ref, onMounted } from 'vue'
 import { regLink, loginLink } from '~/composables/globalData'
+import { WHITELABEL_ID } from '~/composables/globalData'
+const brandId = computed(() => WHITELABEL_ID)
 
 const { isLoaded, isLoading, msgTranslate } = useTranslations()
 const menuIsOpen = ref(false)

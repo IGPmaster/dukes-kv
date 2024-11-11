@@ -38,7 +38,8 @@
 <script setup>
 import { onMounted } from 'vue';
 import { useHead } from '#imports';
-// import { pp_promotions, msgTranslate, regLink, loginLink } from '~/composables/globalData';
+import { WHITELABEL_ID } from '~/composables/globalData'
+const brandId = computed(() => WHITELABEL_ID)
 const myPromotionsPosts = useFetch(() => fetchApiPromotions());
 // Set page-specific meta tags
 useHead({

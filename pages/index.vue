@@ -101,6 +101,8 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
+import { WHITELABEL_ID } from '~/composables/globalData'
+const brandId = computed(() => WHITELABEL_ID)
 const { getCacheKey, getCache, setCache } = useCache();
 
 // Initialize refs

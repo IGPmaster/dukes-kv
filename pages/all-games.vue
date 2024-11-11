@@ -121,6 +121,8 @@ import {
   fetchBrandContent,
   fetchGames
 } from '~/composables/globalData';
+import { WHITELABEL_ID } from '~/composables/globalData'
+const brandId = computed(() => WHITELABEL_ID)
 
 const selectedProvider = ref('all');
 const selectedSubProvider = ref('all');

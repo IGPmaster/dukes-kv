@@ -9,6 +9,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { WHITELABEL_ID } from '~/composables/globalData'
+const brandId = computed(() => WHITELABEL_ID)
 
 const accepted = ref(false);
 

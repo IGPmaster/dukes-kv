@@ -19,7 +19,8 @@
 
 
 <script setup>
-
+import { WHITELABEL_ID } from '~/composables/globalData'
+const brandId = computed(() => WHITELABEL_ID)
 function updateCode(key, globalContent) {
     const code = globalContent[key];
     return code; // Return the code value

@@ -159,6 +159,8 @@ c.	11th – 50th Placed - £10</li>
 <script setup>
 import { onMounted } from 'vue';
 import { useHead } from '#imports';
+import { WHITELABEL_ID } from '~/composables/globalData'
+const brandId = computed(() => WHITELABEL_ID)
 // import { pp_promotions, msgTranslate, regLink, loginLink } from '~/composables/globalData';
 const myPromotionsPosts = useFetch(() => fetchApiPromotions());
 // Set page-specific meta tags
