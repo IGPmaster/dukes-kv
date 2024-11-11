@@ -1,6 +1,28 @@
 export default defineNuxtConfig({
-  // Keep SSR true for Cloudflare Pages
   ssr: true,
+  
+  // Combine all modules
+  modules: [
+    '@nuxtjs/tailwindcss',
+    '@nuxtjs/google-fonts'
+  ],
+
+  // Google Fonts configuration
+  googleFonts: {
+    families: {
+      Poppins: [300, 400, 500, 600, 700],
+      Roboto: [100, 200, 300, 400, 500, 600, 700]
+    },
+    display: 'swap',
+    prefetch: true,
+    preconnect: true,
+    preload: true,
+    download: true,
+    base64: false
+  },
+
+  // Remove buildModules as it's not used in Nuxt 3
+  
   nitro: {
     preset: 'cloudflare-pages',
     output: {
@@ -9,24 +31,26 @@ export default defineNuxtConfig({
     },
     prerender: {
       fallback: true,
-      crawlLinks: true,     // Add this to prerender linked pages
-      routes: ['/']         // Add this to ensure root is prerendered
+      crawlLinks: true,
+      routes: ['/']
     }
   },
-  // Use ISR (Incremental Static Regeneration) for all routes
+
   routeRules: {
     '/**': { isr: true }
   },
-  // Add this experimental feature for better Cloudflare Pages compatibility
+
   experimental: {
     payloadExtraction: false
   },
+
   css: ['~/assets/main.css'],
+
   plugins: [
     '~/plugins/language.js',
     '~/plugins/hreflang.js',
   ],
-  modules: ['@nuxtjs/tailwindcss'],
+
   app: {
     head: {
       title: 'Dukes Casino - Your Casino!',

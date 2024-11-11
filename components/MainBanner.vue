@@ -5,21 +5,23 @@
     </svg>
   </div>
   <div class="headWrap bg-tertiary_dark">
-    <div v-for="promo in promotionsPosts" :key="promo.id">
+    <div v-for="content in brandContent" :key="content.id">
       <div class="w-full">
-        <a :href="regLink" style="margin-bottom: -5px;" v-if="promo.acf && promo.yoast_head_json">
+        <a :href="regLink" 
+           style="margin-bottom: -5px;" 
+           v-if="content.acf && content.yoast_head_json">
           <picture>
             <source 
               media="(min-width: 992px)" 
-              :srcset="promo.acf.image_full" 
-              :alt="promo.yoast_head_json.description"
-              :title="promo.yoast_head_json.title"
+              :srcset="content.acf.image_full" 
+              :alt="content.acf.casino_games_info"
+              :title="content.yoast_head_json.title"
             >
             <img 
-              :src="promo.acf.image_small" 
+              :src="content.acf.image_small" 
               class="w-full" 
-              :alt="promo.yoast_head_json.description"
-              :title="promo.yoast_head_json.title" 
+              :alt="content.acf.casino_games_info"
+              :title="content.yoast_head_json.title" 
               style="min-width: 100vw; padding-top:6rem;" 
               width="1920"
               height="400"
@@ -29,19 +31,21 @@
       </div>
 
       <div class="container mx-auto text-center text-primary sig_terms lg:py-5 lg:w-3/4">
-        <div class="px-5" v-html="promo.acf.sig_terms"></div>
+        <div class="px-5" v-html="content.acf.sig_terms"></div>
       </div>
 
       <main class="container mx-auto text-center py-4">
-        <h1 class="site_heading text-primary text-lg md:text-2xl lg:text-4xl font-bold">{{promo.yoast_head_json.title}}</h1>
+        <h1 class="site_heading text-primary text-lg md:text-2xl lg:text-4xl font-bold">
+          {{content.yoast_head_json.title}}
+        </h1>
       </main>
 
       <div class="container mx-auto">
         <div class="flex justify-center lg:pb-5 py-3">
           <img 
             class="lg:w-2/5 w-7/8 place-items-center" 
-            :src="promo.acf.trust_icons"
-            :alt="promo.yoast_head_json.description" 
+            :src="content.acf.trust_icons"
+            :alt="content.yoast_head_json.description" 
           />
         </div>
       </div>
@@ -50,61 +54,66 @@
 </template>
 
 <script setup>
-
-import { ref, onMounted, defineEmits } from 'vue';
+const { getCacheKey, getCache, setCache } = useCache();
 const loading = ref(true);
 
-import { promotionsPosts, regLink, fetchPromotions } from '~/composables/globalData';
-
-// Define emit
-const emit = defineEmits(['loaded']);
+const cacheKey = computed(() => getCacheKey('main-banner', {
+  lang: lang.value,
+  brandId: brandId.value
+}));
 
 onMounted(async () => {
   try {
-    await fetchPromotions();
-    loading.value = false;
+    // Check cache first
+    const cached = getCache(cacheKey.value);
+    if (cached) {
+      brandContent.value = cached;
+      loading.value = false;
+      return;
+    }
+
+    // Fetch fresh data
+    await fetchBrandContent();
+    setCache(cacheKey.value, brandContent.value);
   } catch (error) {
-    console.error('Error fetching promotions:', error);
+    console.error('Error in MainBanner:', error);
+  } finally {
+    loading.value = false;
   }
-  loading.value = false;
-  emit('loaded');
 });
 
 </script>
 
 <style scoped>
-/* Mobile styles (max-width: 767px) */
+/* Your existing styles remain the same */
 .loading-placeholder {
   min-height: 175vw;
 }
 
-/* Tablet styles (min-width: 768px) */
 @media (min-width: 768px) {
   .loading-placeholder {
     min-height: 120vw;
   }
 }
 
-/* Desktop styles (min-width: 992px) */
 @media (min-width: 992px) {
   .loading-placeholder {
     min-height: 70vw;
   }
 }
 
-/* Large Desktop styles (min-width: 1920px) */
 @media (min-width: 1920px) {
   .loading-placeholder {
     min-height: 58vw;
   }
 }
 
-/* Xtreme Desktop styles (min-width: 2400px and up) */
 @media (min-width: 2400px) {
   .loading-placeholder {
     min-height: 52vw;
   }
 }
+
 .spinner {
   animation: rotate 2s linear infinite;
   z-index: 2;

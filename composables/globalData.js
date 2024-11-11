@@ -24,7 +24,7 @@ export const globalContent = ref({
 export const WHITELABEL_ID = 30;
 export const PP_API_URL = 'https://prd-api.casino-pp.net/CmSHelper/';
 const PP_PROMOTIONS_API = `${PP_API_URL}GetPromotionsInfo?whitelabelId=${WHITELABEL_ID}&country=`;
-const PP_LOBBY_LINK = 'https://betdukes.casino-pp.net/';
+const PP_LOBBY_LINK = 'https://dukescasino.casino-pp.net/';
 //const KV_GAMES = `https://content.progressplay.net/api23/api/game?whitelabelId=${WHITELABEL_ID}`; // Test API
 
 
@@ -33,14 +33,16 @@ const WP_API = 'https://headless.betdukes.com/wp-json/wp/v2/';
 
 //CloudFlare Workers KV data:
 const KV_WORKER_URL = 'https://worker-casino-brands.tech1960.workers.dev/';
+const PROMOTIONS_WORKER_URL = 'https://casino-promotions-api.tech1960.workers.dev';
 export const KV_GAMES = 'https://access-ppgames.tech1960.workers.dev/';
 export const FILTERED_BY_NAME_KV = 'https://access-filterbyname.tech1960.workers.dev/';
 const CF_GEO_WORKER = 'https://cf-geo-lookup.tech1960.workers.dev/';
 const KV_SUPPORTED_COUNTRIES = "https://access-supportedcountries.tech1960.workers.dev/";
-//const REST_COUNTRY_KV = "https://access-restcountries.tech1960.workers.dev/";
 const IGP_SUPPORTED_COUNTRIES = "https://igp-supported-countries.tech1960.workers.dev/";
 const KV_TRANSLATIONS ="https://access-translations.tech1960.workers.dev/";
 
+const brandContent = ref([]); // renamed from promotionsPosts
+const promotionsData = ref([]); // new ref for KV promotions
 const games = ref([]);
 const newGames = ref([]);
 const filterByName = ref([]);
@@ -82,57 +84,146 @@ export async function checkCountry() {
 
 export async function loadLang() {
   if (typeof window !== 'undefined') {
-    let langValue;
-
-    // 1. Check CF_GEO_WORKER for originalLang
     try {
+      // 1. Get user's country from CF_GEO_WORKER
       const workerResponse = await fetch(CF_GEO_WORKER);
       const workerData = await workerResponse.json();
-      const originalLang = workerData.countryCode;
+      const userCountry = workerData.countryCode;
+      
+      console.log('👤 User Country:', {
+        detected: userCountry,
+        data: workerData
+      });
 
-      // 2:1 Verify value with KV_SUPPORTED_COUNTRIES
-      const apiResponse = await fetch(KV_SUPPORTED_COUNTRIES);
-      const apiData = await apiResponse.json();
-      const foundLangKV = apiData.find(c => c.countryIntlCode === originalLang);
-
-      // Verify value with IGP_SUPPORTED_COUNTRIES
+      // 2. Get IGP language mappings
       const igpResponse = await fetch(IGP_SUPPORTED_COUNTRIES);
-      const igpData = await igpResponse.json();
-      const foundLangIGP = Object.values(igpData).flat().includes(originalLang);
+      const IGP_SUPPORTED_COUNTRIES_KV = await igpResponse.json();
+      
+      console.log('🌍 Available Languages:', IGP_SUPPORTED_COUNTRIES_KV);
 
-      // Check if the originalLang exists in both KV's
-      if (foundLangKV && foundLangIGP) {
-        langValue = originalLang;
-      } else {
-        // If the country is not found in both KV's, set fallback to 'CA'
-        langValue = 'CA';
+      // 3. Simple language resolution
+      let langValue = 'CA'; // Default fallback
+      let foundGroup = null;
+
+      // Find which group the country belongs to
+      for (const [group, countries] of Object.entries(IGP_SUPPORTED_COUNTRIES_KV)) {
+        if (countries.includes(userCountry)) {
+          foundGroup = group;
+          // Special handling for different groups
+          switch(group) {
+            case 'ES':  // Spanish group - use ES for all
+            case 'FI':  // Finnish - use FI
+            case 'JP':  // Japanese - use JP
+            case 'PT':  // Portuguese - use PT
+              langValue = group;
+              break;
+            case 'EU':  // EU countries - use IE as content source
+              langValue = 'IE';
+              break;
+            case 'EN':  // English group - use their specific country code
+              langValue = userCountry;
+              break;
+            default:
+              langValue = userCountry;
+          }
+          break;
+        }
       }
+
+      console.log('🎯 Language Resolution:', {
+        userCountry,
+        groupFound: foundGroup,
+        resolvedLanguage: langValue
+      });
+
+      // Set language and cookie
+      lang.value = langValue;
+      setCookie('lang', langValue, 30, 'None', true);
+
+      await fetchCountry();
+
     } catch (error) {
-      console.error('Error getting country code:', error);
+      console.error('❌ Error in loadLang:', error);
+      lang.value = 'CA';  // Ultimate fallback
+      setCookie('lang', 'CA', 30, 'None', true);
+      await fetchCountry();
+    }
+  }
+}
+
+export async function loadTranslations() {
+  try {
+    console.log('🏁 Starting loadTranslations:', { 
+      currentLang: lang.value,
+      cookieLang: getCookie('lang')
+    });
+
+    // Special handling for direct language codes
+    if (['ES', 'JP', 'FI', 'PT'].includes(lang.value)) {
+      const langCode = lang.value.toLowerCase();
+      console.log('📡 Direct language group translation:', langCode);
+      
+      const translationsResponse = await fetch(`${KV_TRANSLATIONS}?lang=${langCode}`);
+      console.log('📥 Translation response:', {
+        status: translationsResponse.status,
+        ok: translationsResponse.ok
+      });
+
+      const allTranslations = await translationsResponse.json();
+      msgTranslate.value = allTranslations;
+      return;
     }
 
-    // 2:2 Check if lang cookie exists
-    const cookieLang = getCookie('lang');
+    // For country codes and EU countries
+    const response = await fetch(IGP_SUPPORTED_COUNTRIES);
+    const IGP_SUPPORTED_COUNTRIES_KV = await response.json();
+    let langCode = 'en'; // Default to English
 
-    if (cookieLang) {
-      // 2:3 Compare values, if same use cookie value
-      if (langValue && langValue.toUpperCase() === cookieLang.toUpperCase()) {
-        lang.value = cookieLang.toUpperCase();
-      } else {
-        // 2:4 If NOT same value (or empty lang cookie), set new lang cookie value from CF_GEO_WORKER value
-        lang.value = langValue || 'CA';
-        // Set the 'lang' cookie to the selected language for one month
-        setCookie('lang', lang.value, 30, 'None', true);
+    // Check if country is in a language group
+    let foundInGroup = false;
+    for (const [group, countries] of Object.entries(IGP_SUPPORTED_COUNTRIES_KV)) {
+      if (countries.includes(lang.value)) {
+        switch(group) {
+          case 'EU':
+            langCode = 'en';  // EU countries use English translations
+            break;
+          case 'EN':
+            langCode = 'en';  // English-speaking countries
+            break;
+          default:
+            langCode = group.toLowerCase();
+        }
+        foundInGroup = true;
+        break;
       }
-    } else {
-      // 3. Fallback to "CA" if all the above fails
-      lang.value = langValue || 'CA';
-      // Set the 'lang' cookie to the selected language for one month
-      setCookie('lang', lang.value, 30, 'None', true);
     }
 
-    // Fetch the country data based on the selected language
-    await fetchCountry();
+    console.log('📡 Fetching translations:', {
+      country: lang.value,
+      group: foundInGroup,
+      langCode: langCode
+    });
+
+    const translationsResponse = await fetch(`${KV_TRANSLATIONS}?lang=${langCode}`);
+    const allTranslations = await translationsResponse.json();
+    msgTranslate.value = allTranslations;
+
+  } catch (error) {
+    console.error('❌ Translation error:', error);
+    // Fallback to English
+    try {
+      const fallbackResponse = await fetch(`${KV_TRANSLATIONS}?lang=en`);
+      const fallbackTranslations = await fallbackResponse.json();
+      msgTranslate.value = fallbackTranslations;
+    } catch (fallbackError) {
+      console.error('❌ Even fallback failed:', fallbackError);
+      // Set some basic translations as ultimate fallback
+      msgTranslate.value = {
+        login: 'Login',
+        sign_up: 'Sign Up',
+        // ... other basic translations
+      };
+    }
   }
 }
 
@@ -156,32 +247,7 @@ async function fetchCountry() {
   await loadTranslations();
 }
 
-export async function loadTranslations() {
-  try {
-    const response = await fetch(IGP_SUPPORTED_COUNTRIES);
-    const IGP_SUPPORTED_COUNTRIES_KV = await response.json();
-    let langCode = lang.value;
-    const countryCode = langCode;
-    if (!Object.values(IGP_SUPPORTED_COUNTRIES_KV).flat().includes(countryCode)) {
-      langCode = 'EN';
-    } else {
-      for (const [key, value] of Object.entries(IGP_SUPPORTED_COUNTRIES_KV)) {
-        if (value.includes(countryCode)) {
-          langCode = key.toLowerCase();
-          break;
-        }
-      }
-    }
 
-    // Fetch translations from the worker
-    const translationsResponse = await fetch(`${KV_TRANSLATIONS}?lang=${langCode}`);
-    const allTranslations = await translationsResponse.json();
-
-    msgTranslate.value = allTranslations;
-  } catch (error) {
-    console.error('Error loading translations:', error);
-  }
-}
 
 async function fetchApiPromotions() {
   try {
@@ -194,10 +260,10 @@ async function fetchApiPromotions() {
   }
 }
 
-// In globalData.js
-export async function fetchPromotions() {
+// Rename this to reflect what it actually does
+export async function fetchBrandContent() {
   try {
-    console.log('Fetching KV content for:', { WHITELABEL_ID, lang: lang.value });
+    console.log('Fetching brand content for:', { WHITELABEL_ID, lang: lang.value });
     
     // Try current language first
     let response = await fetch(`${KV_WORKER_URL}content/${WHITELABEL_ID}/${lang.value}`);
@@ -223,8 +289,8 @@ export async function fetchPromotions() {
     }
 
     if (data && (data.acf || data.brand_info)) {
-      // Ensure consistent structure for components
-      promotionsPosts.value = [{
+      // Rename this to contentData or brandContent
+      brandContent.value = [{
         id: `${WHITELABEL_ID}-${lang.value}`,
         acf: {
           ...data.acf,
@@ -246,14 +312,55 @@ export async function fetchPromotions() {
       }];
     } else {
       console.error('Invalid data structure received:', data);
-      promotionsPosts.value = [];
+      brandContent.value = [];
     }
 
-    console.log('Final promotionsPosts:', promotionsPosts.value);
+    console.log('Final brand content:', brandContent.value);
 
   } catch (error) {
+    console.error('Error fetching brand content:', error);
+    brandContent.value = [];
+  }
+}
+
+// Add new function for actual promotions
+export async function fetchPromotions() {
+  try {
+    console.log('Fetching promotions for:', { WHITELABEL_ID, lang: lang.value });
+    
+    const response = await fetch(
+      `${PROMOTIONS_WORKER_URL}/promotions?brandId=${WHITELABEL_ID}&lang=${lang.value}`
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch promotions');
+    }
+
+    const promotions = await response.json();
+    promotionsData.value = promotions.filter(promo => promo.status === 'active');
+    
+    console.log('Final promotions:', promotionsData.value);
+    
+  } catch (error) {
     console.error('Error fetching promotions:', error);
-    promotionsPosts.value = [];
+    promotionsData.value = [];
+  }
+}
+
+// Function to get a single promotion
+export async function fetchPromotion(slug) {
+  try {
+    // First check if we already have the promotion in our state
+    const found = promotionsData.value.find(p => p.slug === slug);
+    if (found) return found;
+
+    // If not, fetch all promotions (they might have been updated)
+    await fetchPromotions();
+    
+    return promotionsData.value.find(p => p.slug === slug) || null;
+  } catch (error) {
+    console.error('Error fetching single promotion:', error);
+    return null;
   }
 }
 
@@ -424,6 +531,8 @@ export async function fetchCountriesData() {
 
 
 export { 
+    brandContent,       // renamed from promotionsPosts
+    promotionsData,     // new
     //fetchPromotions, 
     fetchApiPromotions, 
     games, 

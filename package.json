@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@gtm-support/vue-gtm": "^3.1.0",
+    "@nuxtjs/google-fonts": "^3.2.0",
     "wrangler": "^3.83.0"
   }
 }

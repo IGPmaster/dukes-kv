@@ -1,81 +1,183 @@
 <template>
-
-	<MainBanner />
-	<NewGames />
-
-	<!-- PP Promotions API -->
-	<div class="section px-5 bg-tertiary_dark">
-    <!-- Promo Over Section -->
-    <div v-for="promo in promotionsPosts" :key="`over-${promo.id}`" class="container py-10 mx-auto text-primary">
-      <div v-if="promo.acf?.promo_over" v-html="promo.acf.promo_over" class="leading-relaxed"></div>
+  <div>
+    <!-- Loading state -->
+    <div v-if="loading" class="min-h-screen flex items-center justify-center">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
     </div>
 
-    <!-- Promotions Grid -->
-    <div class="container mx-auto py-5">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-8">
-        <div v-for="promo in pp_promotions" :key="promo.code">
-          <div class="card overflow-hidden rounded-lg leading-relaxed">
-            <div class="card-image">
-              <a :href="regLink">
-                <img 
-                  class="activator w-full h-auto" 
-                  :src="promo.bigImageUrl" 
-                  loading="lazy"
-                  :alt="'Image of ' + promo.title + ' promotion.'"
-                  :title="promo.title + ', ' + promo.subTitle"
-                >
-              </a>
+    <!-- Content -->
+    <template v-else>
+      <MainBanner />
+      <NewGames />
+
+      <!-- Content and Promotions Section -->
+      <div class="section px-5 bg-tertiary_dark">
+        <!-- Promo Over Section -->
+        <div v-if="brandContent?.[0]" 
+             class="container py-10 mx-auto text-primary">
+          <div v-if="brandContent[0].acf?.promo_over" 
+               v-html="brandContent[0].acf.promo_over" 
+               class="leading-relaxed">
+          </div>
+        </div>
+
+        <!-- KV Promotions Grid -->
+        <div v-if="promotionsData?.length > 0" class="container mx-auto py-5">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-8">
+            <div v-for="promotion in promotionsData" :key="promotion.id">
+              <div class="card overflow-hidden rounded-lg leading-relaxed">
+                <div class="card-image">
+                  <NuxtLink :to="`/promotion/${promotion.slug}`">
+                    <img 
+                      class="activator w-full h-auto hidden md:block" 
+                      :src="promotion.images?.desktop?.url" 
+                      loading="lazy"
+                      :alt="promotion.images?.desktop?.alt"
+                      :title="promotion.title"
+                    >
+                    <img 
+                      class="activator w-full h-auto md:hidden" 
+                      :src="promotion.images?.mobile" 
+                      loading="lazy"
+                      :alt="promotion.title"
+                      :title="promotion.title"
+                    >
+                  </NuxtLink>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PP Promotions Grid -->
+        <div v-if="pp_promotions?.length > 0" class="container mx-auto py-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-8">
+            <div v-for="promo in pp_promotions" :key="promo.code">
+              <div class="card overflow-hidden rounded-lg leading-relaxed">
+                <div class="card-image">
+                  <a :href="regLink">
+                    <img 
+                      class="activator w-full h-auto" 
+                      :src="promo.bigImageUrl" 
+                      loading="lazy"
+                      :alt="'Image of ' + promo.title + ' promotion.'"
+                      :title="promo.title + ', ' + promo.subTitle"
+                    >
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Promo Under Section -->
+        <div v-if="brandContent?.[0]" class="py-10">
+          <div class="container mx-auto py-2 info_content hide_this">
+            <div v-if="brandContent[0].acf?.promo_under" 
+                 class="text-primary" 
+                 v-html="brandContent[0].acf.promo_under">
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Promo Under Section -->
-    <div class="py-10">
-      <div v-for="promo in promotionsPosts" :key="`under-${promo.id}`" 
-           class="container mx-auto py-2 info_content hide_this">
-        <div v-if="promo.acf?.promo_under" 
-             class="text-primary" 
-             v-html="promo.acf.promo_under">
+      <PopularGames />
+      <SlotGames />
+      <CasinoGames />
+      <JackpotGames />
+
+      <div class="container mx-auto py-10">
+        <div class="px-4">
+          <div class="text-sm text-primary">
+            <div v-if="brandContent?.[0]?.acf?.main_content" 
+                 v-html="brandContent[0].acf.main_content">
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </template>
   </div>
-
-	<PopularGames />
-	<SlotGames />
-	<CasinoGames />
-	<JackpotGames />
-
-	<div class="container mx-auto py-10">
-  <div class="px-4">
-    <div class="text-sm text-primary">
-      <div v-for="promo in promotionsPosts" :key="promo.id">
-        <!-- Use main_content from acf with fallback -->
-        <div v-if="promo.acf?.main_content" 
-             v-html="promo.acf.main_content" 
-             :key="promo.id">
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { promotionsPosts, pp_promotions, regLink, fetchPromotions, fetchApiPromotions } from '~/composables/globalData';
+import { ref, onMounted, computed } from 'vue';
+const { getCacheKey, getCache, setCache } = useCache();
+
+// Initialize refs
+const loading = ref(true);
+const error = ref(null);
+
+// Import your global data
+import { 
+  brandContent,
+  promotionsData,
+  pp_promotions,
+  regLink, 
+  fetchBrandContent,
+  fetchPromotions,
+  fetchApiPromotions
+} from '~/composables/globalData';
+
+// Create cache keys
+const cacheKeys = computed(() => ({
+  brand: 'brand-content',
+  promotions: 'promotions',
+  ppPromotions: 'pp-promotions'
+}));
 
 onMounted(async () => {
   try {
-    // Fetch both KV content and PP promotions
-    await Promise.all([
-      fetchPromotions(),
-      fetchApiPromotions()
-    ]);
-  } catch (error) {
-    console.error('Error fetching content:', error);
+    // Check caches first
+    const cachedBrand = getCache(cacheKeys.value.brand);
+    const cachedPromos = getCache(cacheKeys.value.promotions);
+    const cachedPPPromos = getCache(cacheKeys.value.ppPromotions);
+
+    const fetchPromises = [];
+
+    if (!cachedBrand) {
+      fetchPromises.push(
+        fetchBrandContent().then(() => {
+          if (brandContent.value) {
+            setCache(cacheKeys.value.brand, brandContent.value);
+          }
+        })
+      );
+    } else {
+      brandContent.value = cachedBrand;
+    }
+
+    if (!cachedPromos) {
+      fetchPromises.push(
+        fetchPromotions().then(() => {
+          if (promotionsData.value) {
+            setCache(cacheKeys.value.promotions, promotionsData.value);
+          }
+        })
+      );
+    } else {
+      promotionsData.value = cachedPromos;
+    }
+
+    if (!cachedPPPromos) {
+      fetchPromises.push(
+        fetchApiPromotions().then(() => {
+          if (pp_promotions.value) {
+            setCache(cacheKeys.value.ppPromotions, pp_promotions.value);
+          }
+        })
+      );
+    } else {
+      pp_promotions.value = cachedPPPromos;
+    }
+
+    if (fetchPromises.length > 0) {
+      await Promise.all(fetchPromises);
+    }
+  } catch (err) {
+    console.error('Error fetching data:', err);
+    error.value = err;
+  } finally {
+    loading.value = false;
   }
 });
 </script>
