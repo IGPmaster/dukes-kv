@@ -48,8 +48,8 @@
             :alt="content.yoast_head_json.description" 
           />
         </div>
-      </div>
-    </div> -->
+      </div> -->
+    </div>
   </div>
 </template>
 
