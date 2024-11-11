@@ -40,7 +40,7 @@
         </h1>
       </main>
 
-      <div class="container mx-auto">
+      <!-- <div class="container mx-auto">
         <div class="flex justify-center lg:pb-5 py-3">
           <img 
             class="lg:w-2/5 w-7/8 place-items-center" 
@@ -49,7 +49,7 @@
           />
         </div>
       </div>
-    </div>
+    </div> -->
   </div>
 </template>
 
