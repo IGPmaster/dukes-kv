@@ -34,6 +34,7 @@ const WP_API = 'https://headless.betdukes.com/wp-json/wp/v2/';
 //CloudFlare Workers KV data:
 const KV_WORKER_URL = 'https://worker-casino-brands.tech1960.workers.dev/';
 const PROMOTIONS_WORKER_URL = 'https://casino-promotions-api.tech1960.workers.dev';
+const PAGES_WORKER_URL = 'https://casino-pages-api.tech1960.workers.dev';
 export const KV_GAMES = 'https://access-ppgames.tech1960.workers.dev/';
 export const FILTERED_BY_NAME_KV = 'https://access-filterbyname.tech1960.workers.dev/';
 const CF_GEO_WORKER = 'https://cf-geo-lookup.tech1960.workers.dev/';
@@ -66,6 +67,8 @@ const countries = ref('');
 const country = ref('');
 const countryNotSupported = ref(false);
 const countriesData = ref([]);
+const blogPosts = ref([]);
+const editorialContent = ref([]);
 
 export async function checkCountry() {
   try {
@@ -148,6 +151,46 @@ export async function loadLang() {
       setCookie('lang', 'CA', 30, 'None', true);
       await fetchCountry();
     }
+  }
+}
+
+export async function fetchBlogPosts() {
+  try {
+    console.log('Fetching blog posts');
+    const response = await fetch(
+      `${PAGES_WORKER_URL}/api/pages?brandId=${WHITELABEL_ID}&lang=${lang.value}`
+    );
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch posts');
+    }
+
+    const posts = await response.json();
+    // Filter for blog template and published status
+    blogPosts.value = posts.filter(post => 
+      post.template === 'blog' && 
+      post.status === 'published'
+    );
+    
+    console.log('Blog posts:', blogPosts.value);
+  } catch (error) {
+    console.error('Error fetching blog posts:', error);
+    blogPosts.value = [];
+  }
+}
+
+export async function fetchEditorialContent() {
+  try {
+    const response = await fetch(
+      `${PROMOTIONS_WORKER_URL}/pages?brandId=${WHITELABEL_ID}&lang=${lang.value}&template=editorial`
+    );
+    if (!response.ok) throw new Error('Failed to fetch editorial content');
+    
+    const content = await response.json();
+    editorialContent.value = content.filter(post => post.status === 'published');
+  } catch (error) {
+    console.error('Error fetching editorial content:', error);
+    editorialContent.value = [];
   }
 }
 
@@ -531,9 +574,9 @@ export async function fetchCountriesData() {
 
 
 export { 
-    brandContent,       // renamed from promotionsPosts
-    promotionsData,     // new
-    //fetchPromotions, 
+    brandContent,
+    promotionsData,
+    blogPosts, 
     fetchApiPromotions, 
     games, 
     newGames, 

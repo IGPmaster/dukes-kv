@@ -52,6 +52,7 @@ function updateMenu() {
                 id="menu">
                 <NuxtLink to="/" class="menu-item hover:bg-slate-800 px-5"><TranslatedText translation-key="home" /></NuxtLink>
                 <NuxtLink to="/promotion" class="menu-item hover:bg-slate-800 px-5">Special Promotion</NuxtLink>
+                <NuxtLink to="/blog" class="menu-item hover:bg-slate-800 px-5">Blog</NuxtLink>
                 <NuxtLink to="/promotions" class="menu-item hover:bg-slate-800 px-5"><TranslatedText translation-key="promotions" />
                 </NuxtLink>
                 <NuxtLink to="/compliance" class="menu-item hover:bg-slate-800 px-5"><TranslatedText translation-key="legal" /></NuxtLink>
