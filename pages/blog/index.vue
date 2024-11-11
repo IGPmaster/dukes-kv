@@ -9,23 +9,51 @@
         </p>
       </div>
 
-      <!-- Loading Spinner -->
-      <div v-if="loading" class="flex justify-center items-center min-h-[400px]">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        <p class="text-gray-300 ml-4">Loading articles...</p>
+      <!-- Featured Post -->
+      <div v-if="!loading && featuredPost" class="mb-16">
+        <div class="relative bg-tertiary rounded-xl overflow-hidden shadow-lg">
+          <img 
+            :src="featuredPost.images?.banner?.url" 
+            :alt="featuredPost.title" 
+            class="w-full h-[400px] object-cover"
+          />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent">
+            <div class="absolute bottom-0 p-8">
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span v-for="tag in (featuredPost.tags || []).slice(0, 3)"
+                      :key="tag"
+                      class="px-3 py-1 text-sm bg-secondary/90 text-white rounded-full">
+                  #{{ tag }}
+                </span>
+              </div>
+              <h2 class="text-3xl font-bold text-white mb-4">
+                {{ featuredPost.title }}
+              </h2>
+              <p class="text-gray-200 mb-4 line-clamp-2">
+                {{ cleanText(featuredPost.content?.excerpt || truncateText(featuredPost.content?.main, 150)) }}
+              </p>
+              <NuxtLink 
+                :to="`/blog/${featuredPost.slug}`"
+                class="inline-flex items-center px-6 py-3 bg-secondary text-white rounded-lg hover:bg-secondary/90"
+              >
+                Read Article
+              </NuxtLink>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- Filters Section -->
-      <div v-else class="mb-8">
+      <!-- Filter Row -->
+      <div v-if="topCategories.length || topTags.length" class="flex flex-wrap gap-4 justify-between items-center p-4 bg-tertiary_dark rounded-lg mb-12 shadow-md">
         <!-- Category Filter -->
-        <div v-if="topCategories.length" class="flex items-center justify-start mb-4">
-          <h3 class="text-lg font-semibold text-primary mr-4">Filter by Category:</h3>
+        <div class="flex items-center gap-2">
+          <h3 class="text-lg font-semibold text-primary">Categories:</h3>
           <button 
             v-for="category in topCategories"
             :key="category"
             @click="toggleCategory(category)"
             :class="[
-              'px-3 py-1 rounded-full text-sm transition-colors mx-1',
+              'px-3 py-1 rounded-full text-sm transition-colors',
               selectedCategory === category
                 ? 'bg-secondary text-white'
                 : 'bg-tertiary text-gray-400 hover:bg-tertiary_dark'
@@ -36,8 +64,8 @@
         </div>
 
         <!-- Tag Filter -->
-        <div v-if="topTags.length" class="flex items-center justify-start mb-4">
-          <h3 class="text-lg font-semibold text-primary mr-4">Popular Tags:</h3>
+        <div class="flex items-center gap-2">
+          <h3 class="text-lg font-semibold text-primary">Tags:</h3>
           <div class="flex flex-wrap gap-2">
             <button 
               v-for="tag in topTags"
@@ -60,7 +88,8 @@
       <div v-if="!loading && filteredPosts.length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <article v-for="post in filteredPosts" 
                  :key="post.id"
-                 class="bg-tertiary rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-200">
+                 class="bg-tertiary rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-200 flex flex-col"
+                 style="height:100%;">
           <!-- Post Image -->
           <div class="relative">
             <img 
@@ -72,24 +101,27 @@
           </div>
 
           <!-- Post Content -->
-          <div class="p-6 bg-tertiary_dark/40">
-            <div class="flex items-center text-sm text-gray-400 mb-2">
-              <time :datetime="post.created_at">{{ formatDate(post.created_at) }}</time>
-              <span class="mx-2">·</span>
-              <span>{{ calculateReadingTime(post.content.main) }} min read</span>
+          <div class="flex flex-col justify-between flex-grow p-6 bg-tertiary_dark/40">
+            <div>
+              <div class="flex items-center text-sm text-gray-400 mb-2">
+                <time :datetime="post.created_at">{{ formatDate(post.created_at) }}</time>
+                <span class="mx-2">·</span>
+                <span>{{ calculateReadingTime(post.content.main) }} min read</span>
+              </div>
+
+              <h3 class="text-xl font-bold text-primary mb-3 line-clamp-2">
+                {{ post.title }}
+              </h3>
+
+              <p class="text-gray-400 mb-4 line-clamp-3">
+                {{ cleanText(post.content.excerpt || truncateText(post.content.main, 150)) }}
+              </p>
             </div>
 
-            <h3 class="text-xl font-bold text-primary mb-3 line-clamp-2">
-              {{ post.title }}
-            </h3>
-
-            <p class="text-gray-400 mb-4 line-clamp-3">
-              {{ cleanText(post.content.excerpt || truncateText(post.content.main, 150)) }}
-            </p>
-
+            <!-- Read More Button -->
             <NuxtLink 
               :to="`/blog/${post.slug}`"
-              class="inline-flex items-center text-secondary hover:text-primary text-primary/70"
+              class="inline-flex items-center text-secondary hover:text-primary text-primary/70 mt-auto pt-4"
               aria-label="Read more about {{ post.title }}"
             >
               Read More
@@ -118,6 +150,7 @@ const loading = ref(true)
 const selectedCategory = ref(null)
 const selectedTags = ref([])
 const filteredPosts = ref([])
+const featuredPost = computed(() => blogPosts.value.length ? blogPosts.value[0] : null)
 
 // Dynamic Tags and Categories
 const topTags = ref([])
@@ -144,7 +177,6 @@ const truncateText = (text, maxLength) => {
   return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
 }
 
-// Strip HTML Tags
 const cleanText = (text) => {
   const parser = new DOMParser()
   const doc = parser.parseFromString(text, 'text/html')
@@ -157,17 +189,14 @@ const aggregateTagsAndCategories = () => {
   const categoryCounts = {}
 
   blogPosts.value.forEach(post => {
-    // Count tags
     post.tags?.forEach(tag => {
       tagCounts[tag] = (tagCounts[tag] || 0) + 1
     })
-    // Count categories
     post.categories?.forEach(category => {
       categoryCounts[category] = (categoryCounts[category] || 0) + 1
     })
   })
 
-  // Sort and get top 5 tags and categories
   topTags.value = Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]).slice(0, 5)
   topCategories.value = Object.keys(categoryCounts).sort((a, b) => categoryCounts[b] - categoryCounts[a]).slice(0, 5)
 }
@@ -194,7 +223,7 @@ const filterPosts = () => {
   filteredPosts.value = blogPosts.value.filter(post => {
     const matchesCategory = !selectedCategory.value || post.categories?.includes(selectedCategory.value)
     const matchesTags = selectedTags.value.length === 0 || post.tags?.some(tag => selectedTags.value.includes(tag))
-    return matchesCategory && matchesTags
+    return post !== featuredPost.value && matchesCategory && matchesTags
   })
 }
 
