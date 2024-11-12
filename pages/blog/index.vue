@@ -1,5 +1,5 @@
 <template>
-  <div class="pt-24 bg-gradient-to-b from-primary_bg to-tertiary_dark min-h-screen">
+  <div class="pt-24 bg-gradient-to-b from-primary_bg to-tertiary_dark min-h-screen pb-48">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="text-center mb-12">
@@ -121,7 +121,7 @@
             <!-- Read More Button -->
             <NuxtLink 
               :to="`/blog/${post.slug}`"
-              class="inline-flex items-center text-secondary hover:text-primary text-primary/70 mt-auto pt-4"
+              class="inline-flex items-center text-primary/70 hover:text-primary text-primary/70 mt-auto pt-4"
               aria-label="Read more about {{ post.title }}"
             >
               Read More

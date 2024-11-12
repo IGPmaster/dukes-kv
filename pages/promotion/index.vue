@@ -20,6 +20,7 @@
       <!-- Loading State -->
       <div v-if="loading" class="flex justify-center items-center min-h-[400px]">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <p class="text-gray-300 ml-4">Loading promotions...</p>
       </div>
 
       <!-- Empty State -->
@@ -46,15 +47,13 @@
       <!-- Promotions Grid -->
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
         <!-- Promotion Card -->
-        <div v-for="promo in promotions" 
-             :key="promo.slug"
-             class="bg-tertiary_dark rounded-lg overflow-hidden shadow-lg transform hover:scale-105 transition-transform duration-300">
-          <!-- Card Image -->
-          <div class="relative aspect-[16/9] overflow-hidden">
-            <img 
-              :src="getImageUrl(promo.images?.desktop?.url || promo.images?.desktop)" 
-              :alt="promo.images?.desktop?.alt || promo.title"
-              class="w-full h-full object-cover hidden md:block"
+        <div v-for="promo in promotions" :key="promo.slug" class="bg-tertiary_dark rounded-lg overflow-hidden shadow-lg flex flex-col">
+  <!-- Card Image (Using Mobile Banner) -->
+  <div class="relative aspect-[16/9] overflow-hidden">
+    <img 
+      :src="getImageUrl(promo.images?.mobile?.url)" 
+      :alt="promo.images?.mobile?.alt || promo.title"
+      class="w-full h-full object-cover"
             />
             <img 
               :src="getImageUrl(promo.images?.mobile?.url || promo.images?.mobile || promo.images?.desktop?.url)" 
@@ -74,16 +73,31 @@
           </div>
 
           <!-- Card Content -->
-          <div class="p-6">
-            <h2 class="text-xl font-bold text-primary mb-3 line-clamp-2">
-              {{ promo.title }}
-            </h2>
-            <div 
-              v-html="promo.content?.description || promo.content?.short_description" 
-              class="text-gray-400 mb-4 line-clamp-3 text-sm prose prose-sm max-w-none prose-invert"
-            ></div>
+          <div class="p-6 flex-grow flex flex-col justify-between">
+            <div>
+              <!-- Promotion Type -->
+              <span v-if="promoTypeDisplay(promo.type)" class="inline-block mb-2 px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                {{ promoTypeDisplay(promo.type) }}
+              </span>
+              
+              <!-- Title -->
+              <h2 class="text-xl font-bold text-primary mb-3 line-clamp-2">
+                {{ promo.title }}
+              </h2>
 
-            <!-- Card Footer -->
+              <!-- Target Player Segment Info -->
+              <p v-if="targetPlayerSegmentDisplay(promo.targeting?.player_segments)" class="text-xs font-semibold text-green-400 mb-2">
+                {{ targetPlayerSegmentDisplay(promo.targeting?.player_segments) }}
+              </p>
+
+              <!-- Description -->
+              <div 
+                v-html="cleanText(promo.content?.short_description || promo.content?.description)" 
+                class="text-gray-400 mb-4 line-clamp-3 text-sm prose prose-sm max-w-none prose-invert"
+              ></div>
+            </div>
+
+            <!-- Card Footer with Dual CTAs -->
             <div class="flex items-center justify-between mt-4">
               <NuxtLink 
                 :to="`/promotion/${promo.slug}`"
@@ -109,11 +123,13 @@
                 </svg>
               </NuxtLink>
 
-              <!-- Valid dates -->
-              <div v-if="promo.valid_from" class="text-xs text-gray-500">
-                {{ formatDate(promo.valid_from) }}
-                {{ promo.valid_to ? ` - ${formatDate(promo.valid_to)}` : '' }}
-              </div>
+              <!-- Claim Offer CTA -->
+              <button
+                @click="claimOffer(promo)"
+                class="px-6 py-2 bg-orange-500 text-white text-sm font-semibold rounded-md shadow-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors duration-200"
+              >
+                Claim Offer
+              </button>
             </div>
           </div>
         </div>
@@ -138,6 +154,13 @@ const getImageUrl = (url) => {
   return url;
 };
 
+// Helper function to strip HTML from the short description
+const cleanText = (text) => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(text, 'text/html');
+  return doc.body.textContent || '';
+};
+
 // Date formatting function
 const formatDate = (dateString) => {
   if (!dateString) return '';
@@ -146,6 +169,28 @@ const formatDate = (dateString) => {
     month: 'short',
     day: 'numeric'
   });
+};
+
+// Helper to display promotion type key
+const promoTypeDisplay = (type) => {
+  const typeKeys = {
+    seasonal: 'Seasonal Promotion',
+    welcome: 'Welcome Offer',
+    loyalty: 'Loyalty Reward'
+    // Add additional mappings as needed
+  };
+  return typeKeys[type] || type;
+};
+
+// Helper to display target player segment info
+const targetPlayerSegmentDisplay = (segments) => {
+  if (segments && segments.length === 3) {
+    return 'Available for all players';
+  }
+  if (segments?.includes('new')) return 'New Players Only';
+  if (segments?.includes('returning')) return 'Returning Players Only';
+  if (segments?.includes('vip')) return 'VIP Players Only';
+  return '';
 };
 
 // Fetch promotions
@@ -161,6 +206,14 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+
+// Claim Offer function (can be customized)
+const claimOffer = (promo) => {
+  console.log(`Claiming offer for promotion: ${promo.title}`);
+  // Custom
+  // Custom logic for handling offer claims can be added here
+  // For example, redirect to a signup page or show a modal, etc.
+};
 
 // SEO
 useHead({
@@ -201,5 +254,8 @@ useHead({
   overflow: hidden;
 }
 
-/* Add any additional styles you need */
+/* Additional styling for buttons */
+.bg-orange-500 {
+  background-color: #FF7F50; /* Coral color for high visibility on dark backgrounds */
+}
 </style>

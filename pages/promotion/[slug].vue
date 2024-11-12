@@ -24,16 +24,22 @@
 
       <!-- Promotion Content -->
       <div v-else class="max-w-4xl mx-auto">
+        <!-- Full-Width Desktop Banner at Top -->
+        <div class="relative rounded-lg overflow-hidden mb-8 bg-tertiary shadow-xl bg-tertiary_dark px-10">
+          <img 
+            :src="getImageUrl(promotion.images?.desktop?.url)" 
+            :alt="promotion.images?.desktop?.alt || promotion.title"
+            class="w-full h-auto"
+          />
+        </div>
+
         <!-- Header -->
         <div class="text-center mb-8">
           <h1 class="text-4xl font-bold text-primary mb-4">{{ promotion.title }}</h1>
-          <p v-if="promotion.content?.short_description" 
-             class="text-gray-400 text-lg">
-            {{ promotion.content.short_description }}
-          </p>
+          <p v-if="promotion.content?.short_description" class="text-gray-400 text-lg">{{ promotion.content.short_description }}</p>
         </div>
 
-        <!-- Status and Dates -->
+        <!-- Status, Type, and Dates -->
         <div class="flex justify-between items-center mb-8">
           <div class="flex items-center space-x-4">
             <span 
@@ -46,6 +52,10 @@
             >
               {{ promotion.status }}
             </span>
+            <span v-if="promotionTypeDisplay(promotion.type)" 
+                  class="px-3 py-1 rounded-full text-sm font-semibold bg-primary/10 text-primary">
+              {{ promotionTypeDisplay(promotion.type) }}
+            </span>
           </div>
           <div v-if="promotion.valid_from" class="text-sm text-gray-400">
             Valid from: {{ formatDate(promotion.valid_from) }}
@@ -55,23 +65,16 @@
           </div>
         </div>
 
-        <!-- Main Image -->
-        <div class="relative rounded-lg overflow-hidden mb-8 bg-tertiary shadow-xl">
+        <!-- Inline Mobile Banner and Description -->
+        <div class="flex flex-col md:flex-row gap-6 mb-8 items-center">
           <img 
-            :src="getImageUrl(promotion.images?.desktop?.url || promotion.images?.desktop)" 
-            :alt="promotion.images?.desktop?.alt || promotion.title"
-            class="w-full h-auto hidden md:block"
-          />
-          <img 
-            :src="getImageUrl(promotion.images?.mobile?.url || promotion.images?.mobile || promotion.images?.desktop?.url)" 
+            :src="getImageUrl(promotion.images?.mobile?.url)" 
             :alt="promotion.images?.mobile?.alt || promotion.title"
-            class="w-full h-auto md:hidden"
+            class="w-full md:w-1/3 h-auto object-cover rounded-lg shadow-md"
           />
-        </div>
-
-        <!-- Content -->
-        <div class="prose prose-lg max-w-none prose-invert mb-8 text-gray-50">
-          <div v-html="promotion.content?.description"></div>
+          <div class="prose prose-lg max-w-none prose-invert text-gray-50">
+            <div v-html="promotion.content?.description"></div>
+          </div>
         </div>
 
         <!-- Terms and Conditions -->
@@ -82,8 +85,9 @@
           </div>
         </div>
 
-        <!-- Back Button -->
-        <div class="flex justify-center mt-12">
+        <!-- Back and Claim Offer Buttons -->
+        <div class="flex justify-between mt-12">
+          <!-- Back to Promotions Button -->
           <NuxtLink 
             to="/promotion"
             class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-gray-300 bg-secondary hover:bg-secondary/90 transition-colors duration-200"
@@ -104,6 +108,14 @@
             </svg>
             Back to Promotions
           </NuxtLink>
+
+          <!-- Claim Offer CTA Button -->
+          <button
+            @click="claimOffer(promotion)"
+            class="px-6 py-3 bg-orange-500 text-white text-base font-semibold rounded-md shadow-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors duration-200"
+          >
+            Claim Offer
+          </button>
         </div>
       </div>
     </div>
@@ -137,6 +149,17 @@ const formatDate = (dateString) => {
     month: 'short',
     day: 'numeric'
   });
+};
+
+// Display promotion type key
+const promotionTypeDisplay = (type) => {
+  const typeKeys = {
+    seasonal: 'Seasonal Promotion',
+    welcome: 'Welcome Offer',
+    loyalty: 'Loyalty Reward'
+    // Add other mappings if needed
+  };
+  return typeKeys[type] || type;
 };
 
 // Fetch promotion data
@@ -174,7 +197,7 @@ onMounted(async () => {
         },
         {
           property: 'og:image',
-          content: getImageUrl(promotion.value.images?.desktop?.url || promotion.value.images?.desktop)
+          content: getImageUrl(promotion.value.images?.desktop?.url)
         }
       ]
     });
@@ -185,10 +208,15 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+
+// Claim Offer function (customizable logic for the CTA button)
+const claimOffer = (promo) => {
+  console.log(`Claiming offer for promotion: ${promo.title}`);
+  // Implement additional logic for claim offer action
+};
 </script>
 
 <style scoped>
-/* Add any scoped styles you need */
 .prose :deep(a) {
   @apply text-secondary hover:text-secondary/90;
 }
@@ -198,9 +226,20 @@ onMounted(async () => {
 }
 
 .prose :deep(ol) {
-  @apply list-decimal pl-6;
+  @apply list-decimal
+  pl-6;
 }
+
 p {
-    color: white;
+  color: white;
+}
+
+/* CTA Button Style */
+.bg-orange-500 {
+  background-color: #FF7F50; /* Bright color for high visibility */
+}
+
+.bg-orange-600:hover {
+  background-color: #FF6347; /* Slightly darker on hover */
 }
 </style>
