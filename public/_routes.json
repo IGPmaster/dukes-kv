@@ -2,7 +2,10 @@
   "version": 1,
   "include": ["/*"],
   "exclude": [],
-  "headers": {
-    "Cache-Control": "no-store"
+  "handlers": {
+    "blog/*": {
+      "src": "/*",
+      "dest": "/index.html"
+    }
   }
 }
