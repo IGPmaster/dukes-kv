@@ -43,7 +43,7 @@
                         <a :href="regLink" target="_blank">
                             <img class="rounded-md w-full" 
                                  :src="game.image" 
-                                 @error="game.image = 'newGameImg.jpg'"
+                                 @error="game.image = 'slotGameImg.jpg'"
                                  loading="lazy" 
                                  :alt="'Image of ' + game.gameName + ' online slot. ' + game.description"
                                  :title="game.gameName + ' - ' + game.id" 
@@ -87,7 +87,7 @@ import { WHITELABEL_ID } from '~/composables/globalData'
 const brandId = computed(() => WHITELABEL_ID)
 const loading = ref(true);
 import { 
-    newGames, 
+    Games, 
     msgTranslate, 
     regLink, 
     loginLink,
@@ -98,17 +98,29 @@ import {
 
 const emit = defineEmits(['loaded']);
 
+const cacheKey = computed(() => getCacheKey('slot-games', {
+  lang: lang.value,
+  userId: userId.value  // example keys, customize as needed
+}));
+
 onMounted(async () => {
-    try {
-        await Promise.all([
-            fetchBrandContent(), // Add this
-            fetchGames()
-        ]);
-    } catch (error) {
-        console.error('Error fetching content:', error);
-    } finally {
-        loading.value = false;
-        emit('loaded');
+  try {
+    // Check cache first
+    const cachedGames = getCache(cacheKey.value);
+    if (cachedGames) {
+      slotGames.value = cachedGames;
+      loading.value = false;
+      return;
     }
+
+    // Fetch fresh data
+    await fetchGames();
+    setCache(cacheKey.value, slotGames.value);
+  } catch (error) {
+    console.error('Error in slot Games:', error);
+  } finally {
+    loading.value = false;
+  }
 });
+
 </script>

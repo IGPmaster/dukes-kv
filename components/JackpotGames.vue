@@ -37,7 +37,7 @@
         <!-- Games grid -->
         <div v-else class="container mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
-                <div v-for="game in newGames.slice(-16).reverse()" :key="game.id" :class="'item-' + game.id"
+                <div v-for="game in jackpotGames.slice(-16).reverse()" :key="game.id" :class="'item-' + game.id"
                     class="shadow-lg rounded-md">
                     <div class="show show-first relative">
                         <a :href="regLink" target="_blank">
@@ -87,7 +87,7 @@ import { WHITELABEL_ID } from '~/composables/globalData'
 const brandId = computed(() => WHITELABEL_ID)
 const loading = ref(true);
 import { 
-    newGames, 
+    jackpotGames, 
     msgTranslate, 
     regLink, 
     loginLink,
@@ -98,17 +98,29 @@ import {
 
 const emit = defineEmits(['loaded']);
 
+const cacheKey = computed(() => getCacheKey('jackpot-games', {
+  lang: lang.value,
+  userId: userId.value  // example keys, customize as needed
+}));
+
 onMounted(async () => {
-    try {
-        await Promise.all([
-            fetchBrandContent(), // Add this
-            fetchGames()
-        ]);
-    } catch (error) {
-        console.error('Error fetching content:', error);
-    } finally {
-        loading.value = false;
-        emit('loaded');
+  try {
+    // Check cache first
+    const cachedGames = getCache(cacheKey.value);
+    if (cachedGames) {
+      jackpotGames.value = cachedGames;
+      loading.value = false;
+      return;
     }
+
+    // Fetch fresh data
+    await fetchGames();
+    setCache(cacheKey.value, jackpotGames.value);
+  } catch (error) {
+    console.error('Error in jackpotGames:', error);
+  } finally {
+    loading.value = false;
+  }
 });
+
 </script>

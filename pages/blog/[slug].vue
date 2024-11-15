@@ -81,37 +81,20 @@
 
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { useHead } from '#imports';
 import { fetchBlogPosts, blogPosts } from '~/composables/globalData';
-import { WHITELABEL_ID } from '~/composables/globalData';
-const brandId = computed(() => WHITELABEL_ID);
 
-const route = useRoute()
-const slug = route.params.slug
+const route = useRoute();
 const post = ref(null);
 const loading = ref(true);
 const error = ref(false);
 
-
-// Helper function to handle image URLs
 const getImageUrl = (url) => {
   if (!url) return '/images/placeholder-blog.jpg';
   return url;
 };
 
-// Date formatting function
-const formatDate = (dateString) => {
-  if (!dateString) return '';
-  return new Date(dateString).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
-};
-
-// Fetch blog post data
 onMounted(async () => {
   try {
     await fetchBlogPosts();
@@ -123,60 +106,7 @@ onMounted(async () => {
     }
 
     post.value = foundPost;
-
-    // Update SEO meta tags with JSON-LD
-    useHead({
-      title: post.value.meta?.title || `${post.value.title} - Casino Blog`,
-      meta: [
-        {
-          name: 'description',
-          content: post.value.meta?.description || post.value.content?.excerpt || ''
-        },
-        {
-          name: 'keywords',
-          content: post.value.meta?.keywords?.join(', ') || 'casino blog, news, guides'
-        },
-        {
-          property: 'og:title',
-          content: post.value.meta?.og_title || post.value.title
-        },
-        {
-          property: 'og:description',
-          content: post.value.meta?.og_description || post.value.content?.excerpt || ''
-        },
-        {
-          property: 'og:image',
-          content: getImageUrl(post.value.images?.featured?.url)
-        }
-      ],
-      script: [
-        {
-          type: 'application/ld+json',
-          json: {
-            "@context": "https://schema.org",
-            "@type": "BlogPosting",
-            "headline": post.value.title,
-            "image": getImageUrl(post.value.images?.featured?.url),
-            "author": {
-              "@type": "Person",
-              "name": "Author Name" // Replace with actual author
-            },
-            "datePublished": post.value.datePublished,
-            "dateModified": post.value.dateModified,
-            "publisher": {
-              "@type": "Organization",
-              "name": "Your Blog Name",
-              "logo": {
-                "@type": "ImageObject",
-                "url": "/path/to/logo.png" // Replace with actual logo path
-              }
-            }
-          }
-        }
-      ]
-    });
-  } catch (error) {
-    console.error('Error fetching blog post:', error);
+  } catch (err) {
     error.value = true;
   } finally {
     loading.value = false;

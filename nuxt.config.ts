@@ -24,37 +24,21 @@ export default defineNuxtConfig({
   
   // Updated Nitro configuration
   nitro: {
-    compatibilityDate: '2024-11-11',
     preset: 'cloudflare-pages',
-    output: {
-      dir: '.output',
-      publicDir: '.output/public'
-    },
     prerender: {
-      failOnError: false, // More forgiving prerendering
-      crawlLinks: true,
-      routes: ['/', '/blog'], // Make sure /blog is prerendered
+      routes: ['/'],
       ignore: [
-        '/blog/**' // Ignore dynamic blog routes during prerendering
+        '/blog/**'
       ]
-    },
-    routeRules: {
-      '/**': { cors: true, headers: { 'access-control-allow-origin': '*' } }
     }
   },
 
   // Updated route rules for better dynamic route handling
   routeRules: {
     '/': { prerender: true },
-    '/blog': { prerender: true },
     '/blog/**': { 
       ssr: true,
-      swr: false,
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
+      swr: false
     }
   },
 
