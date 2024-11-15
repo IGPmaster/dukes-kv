@@ -1,7 +1,8 @@
 export default defineNuxtConfig({
   ssr: true,
   devtools: { enabled: false },
-  // Combine all modules
+  
+  // Modules
   modules: [
     '@nuxtjs/tailwindcss',
     '@nuxtjs/google-fonts'
@@ -20,9 +21,8 @@ export default defineNuxtConfig({
     download: true,
     base64: false
   },
-
-  // Remove buildModules as it's not used in Nuxt 3
   
+  // Updated Nitro configuration
   nitro: {
     compatibilityDate: '2024-11-11',
     preset: 'cloudflare-pages',
@@ -31,18 +31,45 @@ export default defineNuxtConfig({
       publicDir: '.output/public'
     },
     prerender: {
-      fallback: true,
+      failOnError: false, // More forgiving prerendering
       crawlLinks: true,
-      routes: ['/']
+      routes: ['/', '/blog'], // Make sure /blog is prerendered
+      ignore: [
+        '/blog/**' // Ignore dynamic blog routes during prerendering
+      ]
+    },
+    routeRules: {
+      '/**': { cors: true, headers: { 'access-control-allow-origin': '*' } }
     }
   },
 
+  // Updated route rules for better dynamic route handling
   routeRules: {
-    '/**': { isr: true }
+    '/': { prerender: true },
+    '/blog': { prerender: true },
+    '/blog/**': { 
+      ssr: true,
+      swr: false,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    }
   },
 
+  // Experimental features
   experimental: {
-    payloadExtraction: false
+    payloadExtraction: false,
+    inlineSSRStyles: false,
+    renderJsonPayloads: true
+  },
+
+  // Router configuration
+  router: {
+    options: {
+      strict: false
+    }
   },
 
   css: ['~/assets/main.css'],
@@ -65,11 +92,25 @@ export default defineNuxtConfig({
           href: 'https://fonts.googleapis.com/icon?family=Material+Icons'
         }
       ],
-    }
+    },
+    pageTransition: { name: 'page', mode: 'out-in' }
   },
+
   hooks: {
     'app:created': async () => {
       await loadTranslations()
     }
   },
+
+  // Build configuration
+  build: {
+    transpile: ['vue']
+  },
+
+  // Runtime config
+  runtimeConfig: {
+    public: {
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://your-site.com'
+    }
+  }
 });

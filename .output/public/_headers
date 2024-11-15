@@ -2,5 +2,14 @@
   cache-control: public, max-age=31536000, immutable
 /_nuxt/builds/*
   cache-control: public, max-age=1, immutable
+/blog/*
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
 /_nuxt/*
   cache-control: public, max-age=31536000, immutable
+/*
+  access-control-allow-origin: *
+  access-control-allow-methods: *
+  access-control-allow-headers: *
+  access-control-max-age: 0
