@@ -88,10 +88,12 @@ import { fetchBlogPosts, blogPosts } from '~/composables/globalData';
 import { WHITELABEL_ID } from '~/composables/globalData';
 const brandId = computed(() => WHITELABEL_ID);
 
-const route = useRoute();
+const route = useRoute()
+const slug = route.params.slug
 const post = ref(null);
 const loading = ref(true);
 const error = ref(false);
+
 
 // Helper function to handle image URLs
 const getImageUrl = (url) => {
