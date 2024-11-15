@@ -2,10 +2,11 @@
   "version": 1,
   "include": ["/*"],
   "exclude": [],
-  "handlers": {
-    "blog/*": {
-      "src": "/*",
-      "dest": "/index.html"
+  "routes": [
+    { 
+      "src": "/blog/*", 
+      "dest": "/",
+      "status": 200
     }
-  }
+  ]
 }
