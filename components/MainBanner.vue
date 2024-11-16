@@ -95,6 +95,7 @@ const bannerCacheKey = computed(() =>
   getCacheKey('banner', { brandId: brandId.value, lang: lang.value })
 );
 
+
 // Image handlers
 const onImageError = (type, url) => {
     console.error(`🚫 ${type} Banner image failed to load:`, {
