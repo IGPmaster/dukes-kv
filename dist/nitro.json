@@ -1,17 +1,15 @@
 {
-  "date": "2024-10-28T17:24:21.923Z",
-  "preset": "nitro-dev",
+  "date": "2024-11-16T20:06:22.613Z",
+  "preset": "cloudflare-pages",
   "framework": {
     "name": "nuxt",
-    "version": "3.11.2"
+    "version": "3.13.2"
   },
   "versions": {
-    "nitro": "2.9.6"
+    "nitro": "2.9.7"
   },
-  "dev": {
-    "pid": 20615,
-    "workerAddress": {
-      "socketPath": "/var/folders/3k/hjr6sqt519d4z9n6vldkrtc80000gn/T/nitro/worker-20615-1.sock"
-    }
+  "commands": {
+    "preview": "npx wrangler pages dev ./",
+    "deploy": "npx wrangler pages deploy ./"
   }
 }
