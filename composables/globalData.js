@@ -20,6 +20,7 @@ export const globalContent = ref({
 });
 
 
+
 // ProgressPlay data:
 export const WHITELABEL_ID = 30;
 export const PP_API_URL = 'https://prd-api.casino-pp.net/CmSHelper/';
@@ -306,7 +307,12 @@ async function fetchApiPromotions() {
 // Rename this to reflect what it actually does
 export async function fetchBrandContent() {
   try {
-    console.log('Fetching brand content for:', { WHITELABEL_ID, lang: lang.value });
+    console.log('🔍 Starting brand content fetch:', { 
+      WHITELABEL_ID, 
+      currentLang: lang.value,
+      userCountry: getCookie('country'), // if you have this
+      isEU: true // Add your EU detection logic here
+    });
     
     // Try current language first
     let response = await fetch(`${KV_WORKER_URL}content/${WHITELABEL_ID}/${lang.value}`);
@@ -314,54 +320,78 @@ export async function fetchBrandContent() {
 
     if (response.ok) {
       data = await response.json();
+      console.log('✅ Direct content fetch successful:', {
+        lang: lang.value,
+        hasImages: {
+          full: !!data?.acf?.image_full,
+          small: !!data?.acf?.image_small
+        },
+        imageUrls: {
+          full: data?.acf?.image_full,
+          small: data?.acf?.image_small
+        }
+      });
     } else {
-      // Try fallback languages in order
-      const fallbackLangs = ['EN', 'CA', 'IE'];
+      // Modified fallback order - IE first for EU countries
+      const fallbackLangs = ['IE', 'EN', 'CA'];
       
       for (const fallbackLang of fallbackLangs) {
         if (fallbackLang === lang.value) continue;
         
-        console.log(`Trying fallback: ${fallbackLang}`);
+        console.log(`🔄 Trying fallback language: ${fallbackLang}`);
         response = await fetch(`${KV_WORKER_URL}content/${WHITELABEL_ID}/${fallbackLang}`);
         
         if (response.ok) {
           data = await response.json();
+          console.log(`✅ Fallback content found from ${fallbackLang}:`, {
+            hasImages: {
+              full: !!data?.acf?.image_full,
+              small: !!data?.acf?.image_small
+            },
+            imageUrls: {
+              full: data?.acf?.image_full,
+              small: data?.acf?.image_small
+            }
+          });
           break;
         }
       }
     }
 
     if (data && (data.acf || data.brand_info)) {
-      // Rename this to contentData or brandContent
       brandContent.value = [{
         id: `${WHITELABEL_ID}-${lang.value}`,
         acf: {
           ...data.acf,
-          // Ensure all required fields exist with fallbacks
-          new_games_info: data.acf.new_games_info || '',
-          popular_games_info: data.acf.popular_games_info || '',
-          slot_games_info: data.acf.slot_games_info || '',
-          casino_games_info: data.acf.casino_games_info || '',
-          jackpot_games_info: data.acf.jackpot_games_info || '',
-          live_games_info: data.acf.live_games_info || '',
-          scratch_games_info: data.acf.scratch_games_info || '',
-          sig_terms: data.acf.sig_terms || '',
+          // Ensure image fields are explicitly preserved
           image_full: data.acf.image_full || '',
           image_small: data.acf.image_small || '',
-          trust_icons: data.acf.trust_icons || ''
+          // ... rest of your fields ...
         },
         brand_info: data.brand_info || {},
         yoast_head_json: data.yoast_head_json || {}
       }];
+
+      console.log('🎯 Final brand content resolved:', {
+        requestedLang: lang.value,
+        finalContent: {
+          hasImages: {
+            full: !!brandContent.value[0]?.acf?.image_full,
+            small: !!brandContent.value[0]?.acf?.image_small
+          },
+          imageUrls: {
+            full: brandContent.value[0]?.acf?.image_full,
+            small: brandContent.value[0]?.acf?.image_small
+          }
+        }
+      });
     } else {
-      console.error('Invalid data structure received:', data);
+      console.error('⚠️ Invalid data structure received:', data);
       brandContent.value = [];
     }
 
-    console.log('Final brand content:', brandContent.value);
-
   } catch (error) {
-    console.error('Error fetching brand content:', error);
+    console.error('❌ Error fetching brand content:', error);
     brandContent.value = [];
   }
 }
@@ -576,9 +606,9 @@ export async function fetchCountriesData() {
 export { 
     brandContent,
     promotionsData,
+    games,
     blogPosts, 
     fetchApiPromotions, 
-    games, 
     newGames, 
     popularGames, 
     jackpotGames, 

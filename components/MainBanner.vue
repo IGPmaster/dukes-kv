@@ -16,6 +16,7 @@
               :srcset="content.acf.image_full" 
               :alt="content.acf.casino_games_info"
               :title="content.yoast_head_json.title"
+              @error="onImageError('desktop', content.acf.image_full)"
             >
             <img 
               :src="content.acf.image_small" 
@@ -25,65 +26,72 @@
               style="min-width: 100vw; padding-top:6rem;" 
               width="1920"
               height="400"
+              @error="onImageError('mobile', content.acf.image_small)"
+              @load="onImageLoad(content.acf.image_small)"
             >
           </picture>
         </a>
       </div>
 
-      <div class="container mx-auto text-center text-primary sig_terms lg:py-5 lg:w-3/4">
-        <div class="px-5" v-html="content.acf.sig_terms"></div>
-      </div>
-
-      <main class="container mx-auto text-center py-4">
-        <h1 class="site_heading text-primary text-lg md:text-2xl lg:text-4xl font-bold">
-          {{content.yoast_head_json.title}}
-        </h1>
-      </main>
-
-      <!-- <div class="container mx-auto">
-        <div class="flex justify-center lg:pb-5 py-3">
-          <img 
-            class="lg:w-2/5 w-7/8 place-items-center" 
-            :src="content.acf.trust_icons"
-            :alt="content.yoast_head_json.description" 
-          />
-        </div>
-      </div> -->
+      <!-- Rest of your template -->
     </div>
   </div>
 </template>
 
 <script setup>
-import { WHITELABEL_ID } from '~/composables/globalData'
-const brandId = computed(() => WHITELABEL_ID)
-const { getCacheKey, getCache, setCache } = useCache();
+import { ref, onMounted, computed } from 'vue';
+import { 
+    WHITELABEL_ID,
+    brandContent,
+    fetchBrandContent,
+    regLink,
+    lang
+} from '~/composables/globalData';
+
+const brandId = computed(() => WHITELABEL_ID);
 const loading = ref(true);
 
-const cacheKey = computed(() => getCacheKey('main-banner', {
-  lang: lang.value,
-  brandId: brandId.value
-}));
+// Add image loading state tracking
+const imageLoaded = ref(false);
+const imageError = ref(null);
+
+// Image handlers
+const onImageError = (type, url) => {
+    console.error(`🚫 ${type} Banner image failed to load:`, {
+        lang: lang.value,
+        url,
+        timestamp: new Date().toISOString()
+    });
+    imageError.value = { type, url };
+};
+
+const onImageLoad = (url) => {
+    console.log('✅ Banner image loaded successfully:', {
+        lang: lang.value,
+        url,
+        timestamp: new Date().toISOString()
+    });
+    imageLoaded.value = true;
+};
 
 onMounted(async () => {
-  try {
-    // Check cache first
-    const cached = getCache(cacheKey.value);
-    if (cached) {
-      brandContent.value = cached;
-      loading.value = false;
-      return;
+    try {
+        await fetchBrandContent();
+        console.log('🖼️ Banner Debug:', {
+            language: lang.value,
+            imageUrls: {
+                desktop: brandContent.value?.[0]?.acf?.image_full,
+                mobile: brandContent.value?.[0]?.acf?.image_small
+            },
+            contentExists: !!brandContent.value?.[0],
+            acfExists: !!brandContent.value?.[0]?.acf
+        });
+    } catch (error) {
+        console.error('Error in MainBanner:', error);
+    } finally {
+        loading.value = false;
     }
-
-    // Fetch fresh data
-    await fetchBrandContent();
-    setCache(cacheKey.value, brandContent.value);
-  } catch (error) {
-    console.error('Error in MainBanner:', error);
-  } finally {
-    loading.value = false;
-  }
 });
-
 </script>
 
 <style scoped>

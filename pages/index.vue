@@ -101,16 +101,8 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { WHITELABEL_ID } from '~/composables/globalData'
-const brandId = computed(() => WHITELABEL_ID)
-const { getCacheKey, getCache, setCache } = useCache();
-
-// Initialize refs
-const loading = ref(true);
-const error = ref(null);
-
-// Import your global data
 import { 
+  WHITELABEL_ID,
   brandContent,
   promotionsData,
   pp_promotions,
@@ -120,61 +112,18 @@ import {
   fetchApiPromotions
 } from '~/composables/globalData';
 
-// Create cache keys
-const cacheKeys = computed(() => ({
-  brand: 'brand-content',
-  promotions: 'promotions',
-  ppPromotions: 'pp-promotions'
-}));
+const brandId = computed(() => WHITELABEL_ID);
+const loading = ref(true);
+const error = ref(null);
 
 onMounted(async () => {
   try {
-    // Check caches first
-    const cachedBrand = getCache(cacheKeys.value.brand);
-    const cachedPromos = getCache(cacheKeys.value.promotions);
-    const cachedPPPromos = getCache(cacheKeys.value.ppPromotions);
-
-    const fetchPromises = [];
-
-    if (!cachedBrand) {
-      fetchPromises.push(
-        fetchBrandContent().then(() => {
-          if (brandContent.value) {
-            setCache(cacheKeys.value.brand, brandContent.value);
-          }
-        })
-      );
-    } else {
-      brandContent.value = cachedBrand;
-    }
-
-    if (!cachedPromos) {
-      fetchPromises.push(
-        fetchPromotions().then(() => {
-          if (promotionsData.value) {
-            setCache(cacheKeys.value.promotions, promotionsData.value);
-          }
-        })
-      );
-    } else {
-      promotionsData.value = cachedPromos;
-    }
-
-    if (!cachedPPPromos) {
-      fetchPromises.push(
-        fetchApiPromotions().then(() => {
-          if (pp_promotions.value) {
-            setCache(cacheKeys.value.ppPromotions, pp_promotions.value);
-          }
-        })
-      );
-    } else {
-      pp_promotions.value = cachedPPPromos;
-    }
-
-    if (fetchPromises.length > 0) {
-      await Promise.all(fetchPromises);
-    }
+    // Fetch all data in parallel
+    await Promise.all([
+      fetchBrandContent(),
+      fetchPromotions(),
+      fetchApiPromotions()
+    ]);
   } catch (err) {
     console.error('Error fetching data:', err);
     error.value = err;

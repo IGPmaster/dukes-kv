@@ -1,42 +1,33 @@
-export const useCache = () => {
-  const getCacheKey = (prefix, identifiers = {}) => {
-    const parts = [prefix];
-    Object.entries(identifiers).forEach(([key, value]) => {
-      parts.push(`${key}:${value}`);
-    });
-    return parts.join('-');
-  };
+// Simple cache implementation
+const cache = new Map();
 
-  const getCache = (key) => {
-    if (process.server) return null;
-    
-    const cached = localStorage.getItem(key);
-    if (!cached) return null;
+export function getCacheKey(prefix, params = {}) {
+  const sortedParams = Object.entries(params)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${key}:${value}`)
+    .join('|');
+  return `${prefix}|${sortedParams}`;
+}
 
-    const { data, timestamp } = JSON.parse(cached);
-    const cacheAge = Date.now() - timestamp;
-    
-    // Cache expires after 5 minutes (adjust as needed)
-    if (cacheAge > 5 * 60 * 1000) {
-      localStorage.removeItem(key);
-      return null;
-    }
-    
-    return data;
-  };
+export function getCache(key) {
+  const item = cache.get(key);
+  if (!item) return null;
+  
+  if (item.expiry && item.expiry < Date.now()) {
+    cache.delete(key);
+    return null;
+  }
+  
+  return item.value;
+}
 
-  const setCache = (key, data) => {
-    if (process.server) return;
-    
-    localStorage.setItem(key, JSON.stringify({
-      data,
-      timestamp: Date.now()
-    }));
-  };
+export function setCache(key, value, ttlMinutes = 5) {
+  cache.set(key, {
+    value,
+    expiry: Date.now() + (ttlMinutes * 60 * 1000)
+  });
+}
 
-  return {
-    getCacheKey,
-    getCache,
-    setCache
-  };
-};
+export function clearCache() {
+  cache.clear();
+}

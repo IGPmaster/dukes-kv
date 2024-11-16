@@ -82,25 +82,26 @@
 </template>
 
 <script setup>
-import { ref, onMounted, defineEmits } from 'vue';
-import { WHITELABEL_ID } from '~/composables/globalData'
-const brandId = computed(() => WHITELABEL_ID)
-const loading = ref(true);
+import { ref, onMounted, defineEmits, computed } from 'vue';
 import { 
-    Games, 
+    WHITELABEL_ID,
+    games,
     msgTranslate, 
     regLink, 
     loginLink,
-    brandContent,     // Add this
-    fetchBrandContent,// Add this
-    fetchGames 
+    brandContent,
+    fetchBrandContent,
+    fetchGames,
+    slotGames,
+    lang // Make sure to import lang if you're using it
 } from '~/composables/globalData';
+import { getCacheKey, getCache, setCache } from '~/composables/useCache';
 
-const emit = defineEmits(['loaded']);
+const brandId = computed(() => WHITELABEL_ID);
+const loading = ref(true);
 
 const cacheKey = computed(() => getCacheKey('slot-games', {
-  lang: lang.value,
-  userId: userId.value  // example keys, customize as needed
+  lang: lang.value
 }));
 
 onMounted(async () => {
@@ -122,5 +123,4 @@ onMounted(async () => {
     loading.value = false;
   }
 });
-
 </script>

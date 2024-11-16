@@ -45,7 +45,7 @@
                                  :src="game.image" 
                                  @error="game.image = 'newGameImg.jpg'"
                                  loading="lazy" 
-                                 :alt="'Image of ' + game.gameName + ' online slot. ' + game.description"
+                                 :alt="'Image of ' + game.gameName + ' online popular. ' + game.description"
                                  :title="game.gameName + ' - ' + game.id" 
                                  width="200" 
                                  height="132" 
@@ -82,25 +82,26 @@
 </template>
 
 <script setup>
-import { ref, onMounted, defineEmits } from 'vue';
-import { WHITELABEL_ID } from '~/composables/globalData'
-const brandId = computed(() => WHITELABEL_ID)
-const loading = ref(true);
+import { ref, onMounted, defineEmits, computed } from 'vue';
 import { 
-    popularGames, 
+    WHITELABEL_ID,
+    games,
     msgTranslate, 
     regLink, 
     loginLink,
-    brandContent,     // Add this
-    fetchBrandContent,// Add this
-    fetchGames 
+    brandContent,
+    fetchBrandContent,
+    fetchGames,
+    popularGames,
+    lang // Make sure to import lang if you're using it
 } from '~/composables/globalData';
+import { getCacheKey, getCache, setCache } from '~/composables/useCache';
 
-const emit = defineEmits(['loaded']);
+const brandId = computed(() => WHITELABEL_ID);
+const loading = ref(true);
 
 const cacheKey = computed(() => getCacheKey('popular-games', {
-  lang: lang.value,
-  userId: userId.value  // example keys, customize as needed
+  lang: lang.value
 }));
 
 onMounted(async () => {
@@ -117,10 +118,9 @@ onMounted(async () => {
     await fetchGames();
     setCache(cacheKey.value, popularGames.value);
   } catch (error) {
-    console.error('Error in Popular Games:', error);
+    console.error('Error in popular Games:', error);
   } finally {
     loading.value = false;
   }
 });
-
 </script>
