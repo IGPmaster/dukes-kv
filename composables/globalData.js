@@ -94,16 +94,9 @@ export async function loadLang() {
       const workerData = await workerResponse.json();
       const userCountry = workerData.countryCode;
       
-      console.log('👤 User Country:', {
-        detected: userCountry,
-        data: workerData
-      });
-
       // 2. Get IGP language mappings
       const igpResponse = await fetch(IGP_SUPPORTED_COUNTRIES);
       const IGP_SUPPORTED_COUNTRIES_KV = await igpResponse.json();
-      
-      console.log('🌍 Available Languages:', IGP_SUPPORTED_COUNTRIES_KV);
 
       // 3. Simple language resolution
       let langValue = 'CA'; // Default fallback
@@ -134,12 +127,6 @@ export async function loadLang() {
         }
       }
 
-      console.log('🎯 Language Resolution:', {
-        userCountry,
-        groupFound: foundGroup,
-        resolvedLanguage: langValue
-      });
-
       // Set language and cookie
       lang.value = langValue;
       setCookie('lang', langValue, 30, 'None', true);
@@ -157,7 +144,6 @@ export async function loadLang() {
 
 export async function fetchBlogPosts() {
   try {
-    console.log('Fetching blog posts');
     const response = await fetch(
       `${PAGES_WORKER_URL}/api/pages?brandId=${WHITELABEL_ID}&lang=${lang.value}`
     );
@@ -172,8 +158,6 @@ export async function fetchBlogPosts() {
       post.template === 'blog' && 
       post.status === 'published'
     );
-    
-    console.log('Blog posts:', blogPosts.value);
   } catch (error) {
     console.error('Error fetching blog posts:', error);
     blogPosts.value = [];
@@ -197,22 +181,10 @@ export async function fetchEditorialContent() {
 
 export async function loadTranslations() {
   try {
-    console.log('🏁 Starting loadTranslations:', { 
-      currentLang: lang.value,
-      cookieLang: getCookie('lang')
-    });
-
     // Special handling for direct language codes
     if (['ES', 'JP', 'FI', 'PT'].includes(lang.value)) {
       const langCode = lang.value.toLowerCase();
-      console.log('📡 Direct language group translation:', langCode);
-      
       const translationsResponse = await fetch(`${KV_TRANSLATIONS}?lang=${langCode}`);
-      console.log('📥 Translation response:', {
-        status: translationsResponse.status,
-        ok: translationsResponse.ok
-      });
-
       const allTranslations = await translationsResponse.json();
       msgTranslate.value = allTranslations;
       return;
@@ -242,30 +214,21 @@ export async function loadTranslations() {
       }
     }
 
-    console.log('📡 Fetching translations:', {
-      country: lang.value,
-      group: foundInGroup,
-      langCode: langCode
-    });
-
     const translationsResponse = await fetch(`${KV_TRANSLATIONS}?lang=${langCode}`);
     const allTranslations = await translationsResponse.json();
     msgTranslate.value = allTranslations;
 
   } catch (error) {
-    console.error('❌ Translation error:', error);
     // Fallback to English
     try {
       const fallbackResponse = await fetch(`${KV_TRANSLATIONS}?lang=en`);
       const fallbackTranslations = await fallbackResponse.json();
       msgTranslate.value = fallbackTranslations;
     } catch (fallbackError) {
-      console.error('❌ Even fallback failed:', fallbackError);
       // Set some basic translations as ultimate fallback
       msgTranslate.value = {
         login: 'Login',
         sign_up: 'Sign Up',
-        // ... other basic translations
       };
     }
   }
@@ -278,12 +241,9 @@ async function fetchCountry() {
       throw new Error(`Failed to fetch country data (status ${response.status})`);
     }
     const data = await response.json();
-    //console.log('Selected language:', lang.value);
     const country = data.find(c => c.countryIntlCode === lang.value);
-    //console.log('Found country:', country);
     if (country) {
       jurisdictionCode.value = country.jurisdictionCode;
-      //console.log('jurisdictionCode:', jurisdictionCode.value);
     }
   } catch (error) {
     console.error('Error fetching country data:', error);
@@ -298,7 +258,6 @@ async function fetchApiPromotions() {
     const response = await fetch(`${PP_API_URL}GetPromotionsInfo?whitelabelId=${WHITELABEL_ID}&country=${lang.value}`);
     const data = await response.json();
     pp_promotions.value = data;
-    //console.log('this.pp_promotions 123: ', pp_promotions.value);
   } catch (error) {
     console.error(error);
   }
@@ -307,30 +266,12 @@ async function fetchApiPromotions() {
 // Rename this to reflect what it actually does
 export async function fetchBrandContent() {
   try {
-    console.log('🔍 Starting brand content fetch:', { 
-      WHITELABEL_ID, 
-      currentLang: lang.value,
-      userCountry: getCookie('country'), // if you have this
-      isEU: true // Add your EU detection logic here
-    });
-    
     // Try current language first
     let response = await fetch(`${KV_WORKER_URL}content/${WHITELABEL_ID}/${lang.value}`);
     let data = null;
 
     if (response.ok) {
       data = await response.json();
-      console.log('✅ Direct content fetch successful:', {
-        lang: lang.value,
-        hasImages: {
-          full: !!data?.acf?.image_full,
-          small: !!data?.acf?.image_small
-        },
-        imageUrls: {
-          full: data?.acf?.image_full,
-          small: data?.acf?.image_small
-        }
-      });
     } else {
       // Modified fallback order - IE first for EU countries
       const fallbackLangs = ['IE', 'EN', 'CA'];
@@ -338,21 +279,10 @@ export async function fetchBrandContent() {
       for (const fallbackLang of fallbackLangs) {
         if (fallbackLang === lang.value) continue;
         
-        console.log(`🔄 Trying fallback language: ${fallbackLang}`);
         response = await fetch(`${KV_WORKER_URL}content/${WHITELABEL_ID}/${fallbackLang}`);
         
         if (response.ok) {
           data = await response.json();
-          console.log(`✅ Fallback content found from ${fallbackLang}:`, {
-            hasImages: {
-              full: !!data?.acf?.image_full,
-              small: !!data?.acf?.image_small
-            },
-            imageUrls: {
-              full: data?.acf?.image_full,
-              small: data?.acf?.image_small
-            }
-          });
           break;
         }
       }
@@ -363,35 +293,17 @@ export async function fetchBrandContent() {
         id: `${WHITELABEL_ID}-${lang.value}`,
         acf: {
           ...data.acf,
-          // Ensure image fields are explicitly preserved
           image_full: data.acf.image_full || '',
           image_small: data.acf.image_small || '',
-          // ... rest of your fields ...
         },
         brand_info: data.brand_info || {},
         yoast_head_json: data.yoast_head_json || {}
       }];
-
-      console.log('🎯 Final brand content resolved:', {
-        requestedLang: lang.value,
-        finalContent: {
-          hasImages: {
-            full: !!brandContent.value[0]?.acf?.image_full,
-            small: !!brandContent.value[0]?.acf?.image_small
-          },
-          imageUrls: {
-            full: brandContent.value[0]?.acf?.image_full,
-            small: brandContent.value[0]?.acf?.image_small
-          }
-        }
-      });
     } else {
-      console.error('⚠️ Invalid data structure received:', data);
       brandContent.value = [];
     }
 
   } catch (error) {
-    console.error('❌ Error fetching brand content:', error);
     brandContent.value = [];
   }
 }
@@ -399,7 +311,7 @@ export async function fetchBrandContent() {
 // Add new function for actual promotions
 export async function fetchPromotions() {
   try {
-    console.log('Fetching promotions for:', { WHITELABEL_ID, lang: lang.value });
+
     
     const response = await fetch(
       `${PROMOTIONS_WORKER_URL}/promotions?brandId=${WHITELABEL_ID}&lang=${lang.value}`
@@ -412,7 +324,7 @@ export async function fetchPromotions() {
     const promotions = await response.json();
     promotionsData.value = promotions.filter(promo => promo.status === 'active');
     
-    console.log('Final promotions:', promotionsData.value);
+
     
   } catch (error) {
     console.error('Error fetching promotions:', error);

@@ -14,15 +14,15 @@
             <source 
               media="(min-width: 992px)" 
               :srcset="content.acf.image_full" 
-              :alt="content.acf.casino_games_info"
-              :title="content.yoast_head_json.title"
+              :alt="content.yoast_head_json.description"
+              :title="content.yoast_head_json.og_title"
               @error="onImageError('desktop', content.acf.image_full)"
             >
             <img 
               :src="content.acf.image_small" 
               class="w-full" 
-              :alt="content.acf.casino_games_info"
-              :title="content.yoast_head_json.title" 
+              :alt="content.yoast_head_json.description"
+              :title="content.yoast_head_json.og_title" 
               style="min-width: 100vw; padding-top:6rem;" 
               width="1920"
               height="400"
@@ -33,27 +33,67 @@
         </a>
       </div>
 
-      <!-- Rest of your template -->
+      <!-- Significant Terms -->
+      <div class="container mx-auto text-center text-primary sig_terms lg:py-5 lg:w-3/4">
+        <div class="px-5 font-light text-xs" v-html="content.acf.sig_terms"></div>
+      </div>
+
+      <!-- Site Heading -->
+      <main class="container mx-auto text-center py-4">
+        <h1 class="site_heading text-primary text-lg md:text-2xl lg:text-4xl font-bold">
+          Dukes Casino - Your Casino!
+        </h1>
+      </main>
+
+      <!-- Trust Icons -->
+      <div class="container mx-auto">
+        <div class="flex justify-center lg:pb-5 py-3">
+          <img 
+            class="lg:w-2/5 w-7/8 place-items-center" 
+            src="/images/PP-EN_red.svg"
+            alt="100% Licensed and fast payouts" 
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, defineEmits } from 'vue';
 import { 
     WHITELABEL_ID,
     brandContent,
     fetchBrandContent,
     regLink,
-    lang
+    lang,
+    // Remove these if they're in globalData
+    // getCacheKey,
+    // getCache, 
+    // setCache,
+    // preloadImage
 } from '~/composables/globalData';
+
+// Import cache functions from useCache instead
+import { 
+    getCacheKey, 
+    getCache, 
+    setCache, 
+    preloadImage 
+} from '~/composables/useCache';
 
 const brandId = computed(() => WHITELABEL_ID);
 const loading = ref(true);
-
-// Add image loading state tracking
 const imageLoaded = ref(false);
 const imageError = ref(null);
+
+// Define emit
+const emit = defineEmits(['loaded']);
+
+// Cache key for banner content
+const bannerCacheKey = computed(() => 
+  getCacheKey('banner', { brandId: brandId.value, lang: lang.value })
+);
 
 // Image handlers
 const onImageError = (type, url) => {
@@ -74,22 +114,49 @@ const onImageLoad = (url) => {
     imageLoaded.value = true;
 };
 
+// Preload images function
+const preloadBannerImages = async (content) => {
+  if (!content?.acf) return;
+  
+  try {
+    await Promise.all([
+      preloadImage(content.acf.image_full),
+      preloadImage(content.acf.image_small),
+      preloadImage(content.acf.trust_icons)
+    ]);
+  } catch (error) {
+    console.warn('Failed to preload some banner images:', error);
+  }
+};
+
 onMounted(async () => {
     try {
+        // Check cache first
+        const cachedContent = getCache(bannerCacheKey.value);
+        if (cachedContent) {
+            brandContent.value = cachedContent;
+            loading.value = false;
+            emit('loaded');
+            // Preload images in background
+            preloadBannerImages(cachedContent[0]);
+            return;
+        }
+
+        // Fetch fresh content if not cached
         await fetchBrandContent();
-        console.log('🖼️ Banner Debug:', {
-            language: lang.value,
-            imageUrls: {
-                desktop: brandContent.value?.[0]?.acf?.image_full,
-                mobile: brandContent.value?.[0]?.acf?.image_small
-            },
-            contentExists: !!brandContent.value?.[0],
-            acfExists: !!brandContent.value?.[0]?.acf
-        });
+        
+        // Cache the content
+        if (brandContent.value) {
+            setCache(bannerCacheKey.value, brandContent.value, 15); // Cache for 15 minutes
+            // Preload images in background
+            preloadBannerImages(brandContent.value[0]);
+        }
+
     } catch (error) {
         console.error('Error in MainBanner:', error);
     } finally {
         loading.value = false;
+        emit('loaded');
     }
 });
 </script>
@@ -162,5 +229,23 @@ onMounted(async () => {
     stroke-dasharray: 90, 150;
     stroke-dashoffset: -124;
   }
+}
+
+/* Target the p tag inside sig_terms */
+.sig_terms :deep(p) {
+  @apply font-light text-xs text-primary;
+  /* or without Tailwind: */
+  /* font-weight: 300;
+     font-size: 0.75rem;
+     color: var(--color-primary); */
+}
+
+/* If you need to target specific elements inside the terms */
+.sig_terms :deep(p a) {
+  @apply text-primary hover:text-primary/90;
+}
+
+.sig_terms :deep(p strong) {
+  @apply font-medium;
 }
 </style>

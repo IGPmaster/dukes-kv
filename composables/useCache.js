@@ -31,3 +31,14 @@ export function setCache(key, value, ttlMinutes = 5) {
 export function clearCache() {
   cache.clear();
 }
+
+export function preloadImage(url) {
+  if (!process.client) return Promise.resolve(url);
+  
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(url);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
